@@ -1,0 +1,81 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  EMPLOYEE
+  MANAGEMENT
+}
+
+enum FileType {
+  EXCEL
+  HTML
+}
+
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  password  String
+  role      Role     @default(EMPLOYEE)
+  branches  String[]
+  isActive  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  uploads Upload[]
+  alerts  Alert[]
+}
+
+model Upload {
+  id          String   @id @default(cuid())
+  branch      String
+  fileType    FileType
+  fileName    String
+  rawData     Json?
+  htmlContent String?
+  uploadedBy  String
+  uploadedAt  DateTime @default(now())
+  dateKey     String
+  monthKey    String
+
+  user User @relation(fields: [uploadedBy], references: [id])
+
+  @@index([branch, dateKey])
+  @@index([uploadedBy])
+  @@index([monthKey])
+}
+
+model DailySnapshot {
+  id              String   @id @default(cuid())
+  dateKey         String   @unique
+  combinedData    Json
+  missingBranches String[]
+  generatedAt     DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model MonthlySnapshot {
+  id           String   @id @default(cuid())
+  monthKey     String   @unique
+  combinedData Json
+  generatedAt  DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Alert {
+  id      String   @id @default(cuid())
+  message String
+  sentBy  String
+  sentAt  DateTime @default(now())
+
+  user User @relation(fields: [sentBy], references: [id])
+
+  @@index([sentAt])
+}
