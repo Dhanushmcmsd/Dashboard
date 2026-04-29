@@ -108,7 +108,7 @@
       "static/chunks/605-06fc3ad2a866a326.js",
       "static/chunks/app/employee/page-211aaf8bb6033924.js"
     ],
-    "/management/daily/page": [
+    "/management/alerts/page": [
       "static/chunks/webpack-06c8735cefed3cc8.js",
       "static/chunks/fd9d1056-b10926f8b58f9c65.js",
       "static/chunks/117-f69357b33bdf9168.js",
@@ -116,9 +116,8 @@
       "static/chunks/163-8e5825df2615e79e.js",
       "static/chunks/731-26647bf8783df56b.js",
       "static/chunks/713-f2f45cf5d6adcb11.js",
-      "static/chunks/375-cf2740004a5827fa.js",
-      "static/chunks/354-a49c02660ccc3285.js",
-      "static/chunks/app/management/daily/page-d3d04d38767b5e50.js"
+      "static/chunks/438-cb0e319e74f371f4.js",
+      "static/chunks/app/management/alerts/page-c6687e2c4056bfc1.js"
     ],
     "/management/layout": [
       "static/chunks/webpack-06c8735cefed3cc8.js",
@@ -132,7 +131,7 @@
       "static/chunks/605-06fc3ad2a866a326.js",
       "static/chunks/app/management/layout-5a53c15b446fe535.js"
     ],
-    "/management/gold-loan/page": [
+    "/management/daily/page": [
       "static/chunks/webpack-06c8735cefed3cc8.js",
       "static/chunks/fd9d1056-b10926f8b58f9c65.js",
       "static/chunks/117-f69357b33bdf9168.js",
@@ -141,29 +140,8 @@
       "static/chunks/731-26647bf8783df56b.js",
       "static/chunks/713-f2f45cf5d6adcb11.js",
       "static/chunks/375-cf2740004a5827fa.js",
-      "static/chunks/app/management/gold-loan/page-a55f66e1a81a1568.js"
-    ],
-    "/management/alerts/page": [
-      "static/chunks/webpack-06c8735cefed3cc8.js",
-      "static/chunks/fd9d1056-b10926f8b58f9c65.js",
-      "static/chunks/117-f69357b33bdf9168.js",
-      "static/chunks/main-app-dd7630b590f40035.js",
-      "static/chunks/163-8e5825df2615e79e.js",
-      "static/chunks/731-26647bf8783df56b.js",
-      "static/chunks/713-f2f45cf5d6adcb11.js",
-      "static/chunks/438-cb0e319e74f371f4.js",
-      "static/chunks/app/management/alerts/page-c6687e2c4056bfc1.js"
-    ],
-    "/management/ml-loan/page": [
-      "static/chunks/webpack-06c8735cefed3cc8.js",
-      "static/chunks/fd9d1056-b10926f8b58f9c65.js",
-      "static/chunks/117-f69357b33bdf9168.js",
-      "static/chunks/main-app-dd7630b590f40035.js",
-      "static/chunks/163-8e5825df2615e79e.js",
-      "static/chunks/731-26647bf8783df56b.js",
-      "static/chunks/713-f2f45cf5d6adcb11.js",
-      "static/chunks/375-cf2740004a5827fa.js",
-      "static/chunks/app/management/ml-loan/page-4d3455916a13f8c3.js"
+      "static/chunks/354-a49c02660ccc3285.js",
+      "static/chunks/app/management/daily/page-d3d04d38767b5e50.js"
     ],
     "/management/monthly/page": [
       "static/chunks/webpack-06c8735cefed3cc8.js",
@@ -175,6 +153,28 @@
       "static/chunks/375-cf2740004a5827fa.js",
       "static/chunks/354-a49c02660ccc3285.js",
       "static/chunks/app/management/monthly/page-e2fed4ab4a0b1989.js"
+    ],
+    "/management/gold-loan/page": [
+      "static/chunks/webpack-06c8735cefed3cc8.js",
+      "static/chunks/fd9d1056-b10926f8b58f9c65.js",
+      "static/chunks/117-f69357b33bdf9168.js",
+      "static/chunks/main-app-dd7630b590f40035.js",
+      "static/chunks/163-8e5825df2615e79e.js",
+      "static/chunks/731-26647bf8783df56b.js",
+      "static/chunks/713-f2f45cf5d6adcb11.js",
+      "static/chunks/375-cf2740004a5827fa.js",
+      "static/chunks/app/management/gold-loan/page-a55f66e1a81a1568.js"
+    ],
+    "/management/ml-loan/page": [
+      "static/chunks/webpack-06c8735cefed3cc8.js",
+      "static/chunks/fd9d1056-b10926f8b58f9c65.js",
+      "static/chunks/117-f69357b33bdf9168.js",
+      "static/chunks/main-app-dd7630b590f40035.js",
+      "static/chunks/163-8e5825df2615e79e.js",
+      "static/chunks/731-26647bf8783df56b.js",
+      "static/chunks/713-f2f45cf5d6adcb11.js",
+      "static/chunks/375-cf2740004a5827fa.js",
+      "static/chunks/app/management/ml-loan/page-4d3455916a13f8c3.js"
     ],
     "/management/personal-loan/page": [
       "static/chunks/webpack-06c8735cefed3cc8.js",
