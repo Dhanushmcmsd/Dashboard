@@ -27,6 +27,9 @@ model User {
   branches    String[]
   isActive    Boolean  @default(false)
   passwordSet Boolean  @default(false)
+  passwordToken       String?
+  passwordTokenExpiry DateTime?
+  passwordTokenUsedAt DateTime?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -58,6 +61,7 @@ model DailySnapshot {
   dateKey         String   @unique
   combinedData    Json
   missingBranches String[]
+  isBuilding      Boolean  @default(false)
   generatedAt     DateTime @default(now())
   updatedAt       DateTime @updatedAt
 }
