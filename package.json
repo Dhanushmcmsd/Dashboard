@@ -6,7 +6,12 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "db:generate": "dotenv -e .env.local -- npx prisma generate",
+    "db:push": "dotenv -e .env.local -- npx prisma db push",
+    "db:seed": "dotenv -e .env.local -- npx prisma db seed",
+    "db:studio": "dotenv -e .env.local -- npx prisma studio",
+    "db:migrate": "dotenv -e .env.local -- npx prisma migrate dev"
   },
   "repository": {
     "type": "git",
@@ -35,7 +40,7 @@
     "geist": "^1.7.0",
     "lru-cache": "^10.4.3",
     "next": "^16.2.4",
-    "next-auth": "^3.29.10",
+    "next-auth": "^4.24.11",
     "node-html-parser": "^7.1.0",
     "prisma": "^5.22.0",
     "pusher": "^5.3.3",
@@ -55,6 +60,7 @@
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "autoprefixer": "^10.5.0",
+    "dotenv-cli": "^8.0.0",
     "eslint": "^9.39.4",
     "eslint-config-next": "^16.2.4",
     "postcss": "^8.5.12",
