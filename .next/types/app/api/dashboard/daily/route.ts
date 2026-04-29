@@ -1,4 +1,4 @@
-// File: /workspaces/Dashboard/app/api/dashboard/daily/route.ts
+// File: D:\Dashboard\app\api\dashboard\daily\route.ts
 import * as entry from '../../../../../../app/api/dashboard/daily/route.js'
 import type { NextRequest } from 'next/server.js'
 

@@ -1,4 +1,4 @@
-// File: /workspaces/Dashboard/app/api/auth/check-email/route.ts
+// File: D:\Dashboard\app\api\auth\check-email\route.ts
 import * as entry from '../../../../../../app/api/auth/check-email/route.js'
 import type { NextRequest } from 'next/server.js'
 

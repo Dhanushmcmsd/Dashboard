@@ -1,4 +1,4 @@
-// File: /workspaces/Dashboard/app/api/auth/set-password/route.ts
+// File: D:\Dashboard\app\api\auth\set-password\route.ts
 import * as entry from '../../../../../../app/api/auth/set-password/route.js'
 import type { NextRequest } from 'next/server.js'
 

@@ -1,4 +1,4 @@
-// File: /workspaces/Dashboard/app/auth/redirect/page.tsx
+// File: D:\Dashboard\app\auth\redirect\page.tsx
 import * as entry from '../../../../../app/auth/redirect/page.js'
 import type { ResolvingMetadata, ResolvingViewport } from 'next/dist/lib/metadata/types/metadata-interface.js'
 

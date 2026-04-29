@@ -1,4 +1,4 @@
-// File: /workspaces/Dashboard/app/management/daily/page.tsx
+// File: D:\Dashboard\app\management\daily\page.tsx
 import * as entry from '../../../../../app/management/daily/page.js'
 import type { ResolvingMetadata, ResolvingViewport } from 'next/dist/lib/metadata/types/metadata-interface.js'
 

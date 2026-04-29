@@ -1,4 +1,4 @@
-// File: /workspaces/Dashboard/app/management/supermarket/page.tsx
+// File: D:\Dashboard\app\management\supermarket\page.tsx
 import * as entry from '../../../../../app/management/supermarket/page.js'
 import type { ResolvingMetadata, ResolvingViewport } from 'next/dist/lib/metadata/types/metadata-interface.js'
 

@@ -1,4 +1,4 @@
-// File: /workspaces/Dashboard/app/management/ml-loan/page.tsx
+// File: D:\Dashboard\app\management\ml-loan\page.tsx
 import * as entry from '../../../../../app/management/ml-loan/page.js'
 import type { ResolvingMetadata, ResolvingViewport } from 'next/dist/lib/metadata/types/metadata-interface.js'
 
