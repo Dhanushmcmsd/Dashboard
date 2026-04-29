@@ -8,14 +8,14 @@ import AlertToast from "@/components/shared/AlertToast";
 import type { SessionUser } from "@/types";
 
 const TABS = [
-  { label: "🛒 Supermarket", href: "/management/supermarket" },
-  { label: "🥇 Gold Loan", href: "/management/gold-loan" },
-  { label: "📊 ML Loan", href: "/management/ml-loan" },
-  { label: "🚗 Vehicle Loan", href: "/management/vehicle-loan" },
-  { label: "👤 Personal Loan", href: "/management/personal-loan" },
-  { label: "📅 Daily", href: "/management/daily" },
-  { label: "📆 Monthly", href: "/management/monthly" },
-  { label: "🔔 Alerts", href: "/management/alerts" },
+  { label: "Supermarket", icon: "🛒", href: "/management/supermarket" },
+  { label: "Gold Loan", icon: "🥇", href: "/management/gold-loan" },
+  { label: "ML Loan", icon: "📊", href: "/management/ml-loan" },
+  { label: "Vehicle Loan", icon: "🚗", href: "/management/vehicle-loan" },
+  { label: "Personal Loan", icon: "👤", href: "/management/personal-loan" },
+  { label: "Daily", icon: "📅", href: "/management/daily" },
+  { label: "Monthly", icon: "📆", href: "/management/monthly" },
+  { label: "Alerts", icon: "🔔", href: "/management/alerts" },
 ];
 
 export default function ManagementLayout({ children }: { children: React.ReactNode }) {
@@ -32,36 +32,38 @@ export default function ManagementLayout({ children }: { children: React.ReactNo
 
   if (status === "loading") {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-text-muted animate-pulse text-sm">Loading...</div>
+      <div className="min-h-screen flex items-center justify-center" style={{ background: "#0A0A0C" }}>
+        <div className="text-sm animate-pulse" style={{ color: "#64748B" }}>Loading...</div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="min-h-screen flex flex-col" style={{ background: "#0A0A0C" }}>
       <AlertToast />
-      <header className="h-14 bg-surface border-b border-border flex items-center px-6 gap-4 shrink-0">
+      <header
+        className="flex items-center px-6 gap-4 shrink-0 sticky top-0 z-30"
+        style={{ background: "#0D0D12", borderBottom: "1px solid rgba(255,255,255,0.04)", height: "52px" }}
+      >
         <div className="flex items-center gap-2.5">
-          <div className="w-7 h-7 rounded-lg bg-primary/20 flex items-center justify-center">
-            <span className="text-sm">📈</span>
+          <div className="w-7 h-7 rounded-md flex items-center justify-center text-xs font-bold text-white" style={{ background: "#DC2626" }}>
+            BS
           </div>
-          <span className="text-text-main font-bold text-sm">Branch Dashboard</span>
+          <span className="font-semibold text-sm" style={{ color: "#E2E8F0" }}>BranchSync</span>
         </div>
         <div className="ml-auto flex items-center gap-3">
           <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-full bg-success/20 flex items-center justify-center text-xs font-bold text-success">
+            <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold" style={{ background: "rgba(22,163,74,0.15)", color: "#4ADE80" }}>
               {(session?.user?.name ?? "M")[0].toUpperCase()}
             </div>
-            <span className="text-text-muted text-sm hidden sm:block">{session?.user?.name}</span>
+            <span className="text-sm hidden sm:block" style={{ color: "#64748B" }}>{session?.user?.name}</span>
           </div>
-          <Link href="/api/auth/signout" className="text-xs text-danger/70 hover:text-danger transition px-2 py-1">
+          <Link href="/api/auth/signout" className="text-xs px-2 py-1 rounded-lg transition-colors" style={{ color: "#64748B" }}>
             Sign out
           </Link>
         </div>
       </header>
-
-      <nav className="bg-surface border-b border-border overflow-x-auto shrink-0">
+      <nav className="overflow-x-auto shrink-0 sticky z-20" style={{ background: "#0D0D12", borderBottom: "1px solid rgba(255,255,255,0.04)", top: "52px" }}>
         <div className="flex px-4 min-w-max">
           {TABS.map((tab) => {
             const isActive = pathname === tab.href || pathname.startsWith(`${tab.href}/`);
@@ -69,19 +71,16 @@ export default function ManagementLayout({ children }: { children: React.ReactNo
               <Link
                 key={tab.href}
                 href={tab.href}
-                className={`px-4 py-3 text-sm whitespace-nowrap border-b-2 transition font-medium ${
-                  isActive
-                    ? "border-primary text-text-main"
-                    : "border-transparent text-text-muted hover:text-text-main hover:border-border"
-                }`}
+                className="flex items-center gap-1.5 px-4 py-3 text-sm whitespace-nowrap border-b-2 transition-all font-medium"
+                style={isActive ? { borderColor: "#DC2626", color: "#E2E8F0" } : { borderColor: "transparent", color: "#64748B" }}
               >
+                <span>{tab.icon}</span>
                 {tab.label}
               </Link>
             );
           })}
         </div>
       </nav>
-
       <main className="flex-1 p-6 overflow-y-auto">{children}</main>
     </div>
   );

@@ -50,32 +50,87 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background px-4">
-      <div className="w-full max-w-sm">
+    <div
+      className="min-h-screen flex items-center justify-center px-4"
+      style={{ background: "#0A0A0C" }}
+    >
+      {/* Subtle background texture */}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          backgroundImage: "radial-gradient(ellipse at 20% 50%, rgba(37,99,235,0.04) 0%, transparent 60%), radial-gradient(ellipse at 80% 20%, rgba(220,38,38,0.04) 0%, transparent 60%)",
+        }}
+      />
+
+      <div className="w-full max-w-sm relative z-10">
+        {/* Logo / Branding */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-primary/10 border border-primary/30 mb-4">
-            <span className="text-2xl">📊</span>
+          <div className="inline-flex items-center gap-3 mb-6">
+            <div
+              className="w-9 h-9 rounded-lg flex items-center justify-center font-bold text-sm text-white"
+              style={{ background: "#DC2626" }}
+            >
+              BS
+            </div>
+            <span className="text-2xl font-bold tracking-tight" style={{ color: "#E2E8F0" }}>
+              BranchSync
+            </span>
           </div>
-          <h1 className="text-2xl font-bold text-text-main">Branch Dashboard</h1>
-          <p className="text-text-muted text-sm mt-1">Sign in to your account</p>
+          <p className="text-sm" style={{ color: "#64748B" }}>
+            Supra Pacific Financial Services
+          </p>
         </div>
 
-        <div className="bg-surface border border-border rounded-2xl p-8 shadow-2xl shadow-black/30">
+        {/* Card */}
+        <div
+          className="relative overflow-hidden rounded-2xl p-8"
+          style={{
+            background: "#111116",
+            border: "1px solid rgba(255,255,255,0.06)",
+            boxShadow: "0 4px 24px rgba(0,0,0,0.4), 0 0 0 1px rgba(220,38,38,0.08)",
+          }}
+        >
+          {/* Top highlight */}
+          <div
+            className="absolute top-0 left-0 right-0 h-px"
+            style={{ background: "linear-gradient(90deg, transparent, rgba(220,38,38,0.4), transparent)" }}
+          />
+
           {successMsg && (
-            <div className="mb-4 p-3 bg-success/10 border border-success/30 rounded-lg text-success text-sm flex items-center gap-2">
-              <span>✓</span>
+            <div
+              className="mb-5 p-3 rounded-lg text-sm flex items-center gap-2"
+              style={{
+                background: "rgba(22,163,74,0.1)",
+                border: "1px solid rgba(22,163,74,0.25)",
+                color: "#4ADE80",
+              }}
+            >
+              <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
               {successMsg}
             </div>
           )}
+
           {error && (
-            <div className="mb-4 p-3 bg-danger/10 border border-danger/30 rounded-lg text-danger text-sm">
+            <div
+              className="mb-5 p-3 rounded-lg text-sm"
+              style={{
+                background: "rgba(220,38,38,0.08)",
+                border: "1px solid rgba(220,38,38,0.25)",
+                color: "#F87171",
+              }}
+            >
               {error}
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <label className="block text-xs font-medium text-text-muted uppercase tracking-wider mb-1.5">
+              <label
+                className="block text-xs font-medium uppercase tracking-widest mb-2"
+                style={{ color: "#64748B" }}
+              >
                 Email address
               </label>
               <input
@@ -84,12 +139,29 @@ export default function LoginPage() {
                 autoComplete="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full bg-background border border-border rounded-lg px-3 py-2.5 text-text-main text-sm focus:outline-none focus:border-primary transition"
+                className="w-full rounded-lg px-3.5 py-2.5 text-sm outline-none transition-all"
+                style={{
+                  background: "#0F0F14",
+                  border: "1px solid rgba(255,255,255,0.08)",
+                  color: "#E2E8F0",
+                }}
+                onFocus={(e) => {
+                  e.target.style.borderColor = "#2563EB";
+                  e.target.style.boxShadow = "0 0 0 2px rgba(37,99,235,0.12)";
+                }}
+                onBlur={(e) => {
+                  e.target.style.borderColor = "rgba(255,255,255,0.08)";
+                  e.target.style.boxShadow = "none";
+                }}
                 placeholder="you@company.com"
               />
             </div>
+
             <div>
-              <label className="block text-xs font-medium text-text-muted uppercase tracking-wider mb-1.5">
+              <label
+                className="block text-xs font-medium uppercase tracking-widest mb-2"
+                style={{ color: "#64748B" }}
+              >
                 Password
               </label>
               <input
@@ -98,28 +170,45 @@ export default function LoginPage() {
                 autoComplete="current-password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full bg-background border border-border rounded-lg px-3 py-2.5 text-text-main text-sm focus:outline-none focus:border-primary transition"
-                placeholder="Minimum 8 characters"
+                className="w-full rounded-lg px-3.5 py-2.5 text-sm outline-none transition-all"
+                style={{
+                  background: "#0F0F14",
+                  border: "1px solid rgba(255,255,255,0.08)",
+                  color: "#E2E8F0",
+                }}
+                onFocus={(e) => {
+                  e.target.style.borderColor = "#2563EB";
+                  e.target.style.boxShadow = "0 0 0 2px rgba(37,99,235,0.12)";
+                }}
+                onBlur={(e) => {
+                  e.target.style.borderColor = "rgba(255,255,255,0.08)";
+                  e.target.style.boxShadow = "none";
+                }}
+                placeholder="••••••••"
               />
             </div>
+
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-primary hover:bg-primary/90 text-white font-semibold py-2.5 rounded-lg transition disabled:opacity-50 mt-2"
+              className="w-full py-2.5 rounded-lg font-semibold text-sm text-white transition-all mt-2 flex items-center justify-center gap-2 disabled:opacity-50"
+              style={{ background: "#2563EB" }}
+              onMouseEnter={(e) => !loading && ((e.target as HTMLButtonElement).style.background = "#3B82F6")}
+              onMouseLeave={(e) => !loading && ((e.target as HTMLButtonElement).style.background = "#2563EB")}
             >
               {loading ? (
-                <span className="flex items-center justify-center gap-2">
+                <>
                   <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                   Signing in...
-                </span>
+                </>
               ) : "Sign in"}
             </button>
           </form>
         </div>
 
-        <p className="text-center text-text-muted text-sm mt-4">
+        <p className="text-center text-sm mt-5" style={{ color: "#64748B" }}>
           No account?{" "}
-          <Link href="/signup" className="text-primary hover:text-primary/80 font-medium transition">
+          <Link href="/signup" className="font-medium transition-colors" style={{ color: "#2563EB" }}>
             Request access
           </Link>
         </p>
