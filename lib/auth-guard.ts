@@ -1,22 +1,22 @@
-import { getServerSession } from "next-auth";
+import { getServerSession } from "next-auth/next";
 import { authOptions } from "./auth";
-import { NextResponse } from "next/server";
-import type { SessionUser } from "@/types";
+import { SessionUser } from "@/types";
 
-export async function requireAuth(role?: SessionUser["role"]) {
+type RequireAuthResult = 
+  | { error: string; status: number; user?: never }
+  | { error?: never; status?: never; user: SessionUser };
+
+export async function requireAuth(allowedRoles?: string[]): Promise<RequireAuthResult> {
   const session = await getServerSession(authOptions);
-  if (!session?.user) {
-    return {
-      error: NextResponse.json({ error: "Unauthorized" }, { status: 401 }),
-      user: null,
-    };
+  if (!session || !session.user) {
+    return { error: "Unauthorized", status: 401 };
   }
+
   const user = session.user as SessionUser;
-  if (role && user.role !== role) {
-    return {
-      error: NextResponse.json({ error: "Forbidden" }, { status: 403 }),
-      user: null,
-    };
+
+  if (allowedRoles && !allowedRoles.includes(user.role)) {
+    return { error: "Forbidden", status: 403 };
   }
-  return { error: null, user };
+
+  return { user };
 }

@@ -1,74 +1,75 @@
-import { PrismaClient, Role } from "@prisma/client";
-import bcrypt from "bcryptjs";
+const { PrismaClient } = require('@prisma/client');
+const bcrypt = require('bcryptjs');
 
 const prisma = new PrismaClient();
 
-const employeeData = [
-  { name: "Supermarket Employee",    email: "supermarket@supra.com",   branch: "Supermarket"   },
-  { name: "Gold Loan Employee",      email: "goldloan@supra.com",      branch: "Gold Loan"     },
-  { name: "MF Loan Employee",        email: "mfloan@supra.com",        branch: "MF Loan"       },
-  { name: "Vehicle Loan Employee",   email: "vehicleloan@supra.com",   branch: "Vehicle Loan"  },
-  { name: "Personal Loan Employee",  email: "personalloan@supra.com",  branch: "Personal Loan" },
-];
-
 async function main() {
-  console.log("🌱 Seeding database...");
-  try {
-    // ── Admin (you) ──────────────────────────────────────────────────
+  const adminPassword = await bcrypt.hash("admin123", 10);
+  const mgmtPassword = await bcrypt.hash("mgmt123", 10);
+  const empPassword = await bcrypt.hash("emp123", 10);
+
+  const branches = ["Supermarket", "Gold Loan", "ML Loan", "Vehicle Loan", "Personal Loan"];
+
+  // Admin
+  await prisma.user.upsert({
+    where: { email: "admin@company.com" },
+    update: {},
+    create: {
+      name: "Super Admin",
+      email: "admin@company.com",
+      password: adminPassword,
+      role: "ADMIN",
+      isActive: true,
+      passwordSet: true,
+      branches: [],
+    },
+  });
+
+  // Management
+  await prisma.user.upsert({
+    where: { email: "management@company.com" },
+    update: {},
+    create: {
+      name: "HQ Management",
+      email: "management@company.com",
+      password: mgmtPassword,
+      role: "MANAGEMENT",
+      isActive: true,
+      passwordSet: true,
+      branches: [],
+    },
+  });
+
+  // Employees (one for each branch)
+  for (let i = 0; i < branches.length; i++) {
+    const branch = branches[i];
+    const emailStr = `emp${i + 1}@company.com`;
     await prisma.user.upsert({
-      where:  { email: "danny.1.ragha@gmail.com" },
+      where: { email: emailStr },
       update: {},
       create: {
-        name:        "Dhanush (Admin)",
-        email:       "danny.1.ragha@gmail.com",
-        password:    await bcrypt.hash("changeme123", 12),
-        role:        Role.ADMIN,
-        branches:    [],
+        name: `${branch} Employee`,
+        email: emailStr,
+        password: empPassword,
+        role: "EMPLOYEE",
+        isActive: true,
         passwordSet: true,
+        branches: [branch],
       },
     });
-    console.log("✅ Admin: danny.1.ragha@gmail.com / changeme123");
-    console.log("   ⚠️  Change this password immediately after first login!");
-
-    // ── Management ───────────────────────────────────────────────────
-    await prisma.user.upsert({
-      where:  { email: "management@supra.com" },
-      update: {},
-      create: {
-        name:        "Management User",
-        email:       "management@supra.com",
-        password:    await bcrypt.hash("mgmt123", 12),
-        role:        Role.MANAGEMENT,
-        branches:    [],
-        passwordSet: true,
-      },
-    });
-    console.log("✅ Management: management@supra.com / mgmt123");
-
-    // ── Branch Employees ─────────────────────────────────────────────
-    for (const emp of employeeData) {
-      await prisma.user.upsert({
-        where:  { email: emp.email },
-        update: {},
-        create: {
-          name:        emp.name,
-          email:       emp.email,
-          password:    await bcrypt.hash("emp123", 12),
-          role:        Role.EMPLOYEE,
-          branches:    [emp.branch],
-          passwordSet: true,
-        },
-      });
-      console.log(`✅ Employee: ${emp.email} / emp123 (${emp.branch})`);
-    }
-
-    console.log("\n🎉 Seed complete!");
-  } catch (err) {
-    console.error("❌ Seed failed:", err);
-    throw err;
   }
+
+  console.log("Database seeded successfully!");
+  console.log("Admin: admin@company.com / admin123");
+  console.log("Management: management@company.com / mgmt123");
+  console.log("Employees: emp1@company.com ... emp5@company.com / emp123");
 }
 
 main()
-  .catch(e => { console.error(e); process.exit(1); })
-  .finally(() => prisma.$disconnect());
+  .catch((e) => {
+    console.error(e);
+    process.exit(1);
+  })
+  .finally(async () => {
+    await prisma.$disconnect();
+  });

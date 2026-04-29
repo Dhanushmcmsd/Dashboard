@@ -1,5 +1,5 @@
 import BranchDetailView from "@/components/management/BranchDetailView";
 
-export default function Page() {
+export default function MLLoanPage() {
   return <BranchDetailView branch="ML Loan" />;
 }

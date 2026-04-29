@@ -1,20 +1,37 @@
 "use client";
+
+import { useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
-import type { SessionUser } from "@/types";
+import { Loader2 } from "lucide-react";
 
-export default function AuthRedirect() {
+export default function RedirectPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
+
   useEffect(() => {
-    if (status === "loading") return;
-    if (!session) return router.push("/login");
-    const role = (session.user as SessionUser).role;
-    if (role === "ADMIN") router.push("/admin/users");
-    else if (role === "EMPLOYEE") router.push("/employee");
-    else if (role === "MANAGEMENT") router.push("/management/daily");
-    else router.push("/login");
+    if (status === "unauthenticated") {
+      router.push("/login");
+    } else if (status === "authenticated" && session?.user) {
+      switch (session.user.role) {
+        case "ADMIN":
+          router.push("/admin/users");
+          break;
+        case "EMPLOYEE":
+          router.push("/employee");
+          break;
+        case "MANAGEMENT":
+          router.push("/management/daily");
+          break;
+        default:
+          router.push("/login");
+      }
+    }
   }, [session, status, router]);
-  return <div className="min-h-screen flex items-center justify-center bg-background text-text-muted">Redirecting...</div>;
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-[#0A0A0C]">
+      <Loader2 className="w-8 h-8 animate-spin text-primary" />
+    </div>
+  );
 }

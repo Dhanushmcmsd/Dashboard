@@ -1,128 +1,116 @@
 "use client";
 
-import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
-import type { CSSProperties } from "react";
-import { apiFetch, QUERY_KEYS } from "@/lib/query-client";
+import { BranchName } from "@/types";
+import { useBranchDashboard } from "@/hooks/useDashboardData";
 import { getPusherClient } from "@/lib/pusher-client";
-import { PUSHER_CHANNELS, PUSHER_EVENTS, BRANCH_COLORS, DPD_BUCKETS } from "@/lib/constants";
-import type { BranchName, ParsedRow, DpdBucketData } from "@/types";
+import { PUSHER_CHANNELS, PUSHER_EVENTS, BRANCH_COLORS } from "@/lib/constants";
+import { useQueryClient } from "@tanstack/react-query";
+import { QUERY_KEYS } from "@/lib/query-client";
 import KPICard from "./KPICard";
 import DpdBucketChart from "./DpdBucketChart";
+import { format } from "date-fns";
+import { CheckCircle2, Clock, Loader2 } from "lucide-react";
 
-interface BranchUpload {
-  branch: string;
-  rawData: ParsedRow | null;
-  uploadedAt: string;
-  uploadedByName: string;
-  fileName: string;
-  dateKey: string;
+interface Props {
+  branch: BranchName;
 }
 
-const BRANCH_ICONS: Record<BranchName, string> = {
-  "Supermarket": "🛒",
-  "Gold Loan": "🥇",
-  "ML Loan": "📊",
-  "Vehicle Loan": "🚗",
-  "Personal Loan": "👤",
-};
-
-type BranchVars = CSSProperties & {
-  "--branch-bg": string;
-  "--branch-border": string;
-};
-
-export default function BranchDetailView({ branch }: { branch: BranchName }) {
+export default function BranchDetailView({ branch }: Props) {
   const qc = useQueryClient();
-  const color = BRANCH_COLORS[branch];
-  const vars: BranchVars = {
-    "--branch-bg": `${color}20`,
-    "--branch-border": `${color}40`,
-  };
-
-  const { data, isLoading } = useQuery({
-    queryKey: QUERY_KEYS.dashboardBranch(branch),
-    queryFn: () => apiFetch<BranchUpload | null>(`/api/dashboard/branch?branch=${encodeURIComponent(branch)}`),
-    refetchInterval: 2 * 60 * 1000,
-  });
+  const { data, isLoading, isError, refetch } = useBranchDashboard(branch);
 
   useEffect(() => {
     const pusher = getPusherClient();
-    const channel = pusher.subscribe(PUSHER_CHANNELS.UPLOADS);
+    const channel = pusher.subscribe(PUSHER_CHANNELS.PRIVATE_UPLOADS);
+
     channel.bind(PUSHER_EVENTS.UPLOAD_COMPLETE, (payload: { branch: string }) => {
       if (payload.branch === branch) {
-        qc.invalidateQueries({ queryKey: QUERY_KEYS.dashboardBranch(branch) });
+        refetch();
       }
     });
+
     return () => {
-      channel.unbind_all();
-      pusher.unsubscribe(PUSHER_CHANNELS.UPLOADS);
+      pusher.unsubscribe(PUSHER_CHANNELS.PRIVATE_UPLOADS);
     };
-  }, [qc, branch]);
+  }, [branch, refetch]);
 
   if (isLoading) {
     return (
-      <div className="flex items-center gap-2 text-text-muted text-sm animate-pulse">
-        <span className="w-4 h-4 border-2 border-text-muted/30 border-t-text-muted rounded-full animate-spin" />
-        Loading {branch} data...
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
 
-  if (!data || !data.rawData) {
+  if (isError) {
     return (
-      <div style={vars}>
-        <div className="flex items-center gap-3 mb-6">
-          <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl bg-[var(--branch-bg)] border border-[var(--branch-border)]">
-            {BRANCH_ICONS[branch]}
-          </div>
-          <div>
-            <h1 className="text-xl font-bold text-text-main">{branch}</h1>
-            <p className="text-text-muted text-xs">No data uploaded yet for today</p>
-          </div>
-        </div>
-        <div className="bg-surface border border-warning/30 rounded-2xl p-8 text-center">
-          <span className="text-4xl block mb-3">⏳</span>
-          <p className="text-warning font-semibold">Awaiting upload</p>
-          <p className="text-text-muted text-sm mt-1">The {branch} employee has not uploaded data for today yet.</p>
-        </div>
+      <div className="bg-danger/10 border border-danger/20 rounded-xl p-6 text-center">
+        <h3 className="text-danger font-medium mb-2">Failed to load data</h3>
+        <button 
+          onClick={() => refetch()}
+          className="px-4 py-2 bg-surface border border-border rounded-lg text-sm hover:bg-elevated transition-colors"
+        >
+          Try Again
+        </button>
       </div>
     );
   }
 
-  const m = data.rawData;
-  const dpd: DpdBucketData[] = DPD_BUCKETS.map((b) => ({
-    bucket: b,
-    count: m.dpdBuckets[b]?.count ?? 0,
-    amount: m.dpdBuckets[b]?.amount ?? 0,
+  if (!data) {
+    return (
+      <div className="bg-surface border border-border rounded-xl p-12 text-center flex flex-col items-center">
+        <Clock className="h-12 w-12 text-warning mb-4" />
+        <h3 className="text-xl font-medium text-text-primary mb-2">No Data Yet</h3>
+        <p className="text-text-muted max-w-md">
+          {branch} has not uploaded any data today. Once uploaded, the dashboard will update automatically.
+        </p>
+      </div>
+    );
+  }
+
+  const dpdArray = Object.keys(data.dpdBuckets).map(key => ({
+    bucket: key as any,
+    count: data.dpdBuckets[key as keyof typeof data.dpdBuckets].count,
+    amount: data.dpdBuckets[key as keyof typeof data.dpdBuckets].amount,
   }));
 
+  const colorClass = `bg-[${BRANCH_COLORS[branch]}]`; // We will handle dynamic colors properly but this gives a hint
+
   return (
-    <div style={vars}>
-      <div className="flex items-center justify-between mb-6 gap-4 flex-wrap">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl bg-[var(--branch-bg)] border border-[var(--branch-border)]">
-            {BRANCH_ICONS[branch]}
-          </div>
-          <div>
-            <h1 className="text-xl font-bold text-text-main">{branch}</h1>
-            <p className="text-text-muted text-xs mt-0.5">
-              {data.fileName} · Uploaded by <span className="text-text-main">{data.uploadedByName}</span> ·{" "}
-              {new Date(data.uploadedAt).toLocaleString("en-IN")}
-            </p>
-          </div>
+    <div className="space-y-6">
+      <div className="flex flex-col md:flex-row md:items-center justify-between bg-surface border border-border rounded-xl p-6">
+        <div>
+          <h2 className="text-2xl font-bold text-text-primary flex items-center gap-2">
+            {branch}
+            <span className="flex items-center text-xs font-medium bg-success/10 text-success px-2 py-1 rounded-full">
+              <span className="w-2 h-2 rounded-full bg-success animate-pulse mr-1.5" />
+              Uploaded
+            </span>
+          </h2>
+          <p className="text-sm text-text-muted mt-1">
+            Uploaded by {data.uploadedBy} · File: {data.fileName}
+          </p>
         </div>
-        <span className="bg-success/15 text-success text-xs font-medium px-3 py-1.5 rounded-full">Uploaded today</span>
+        <div className="mt-4 md:mt-0 text-left md:text-right">
+          <p className="text-xs text-text-muted uppercase tracking-wider">Last Updated</p>
+          <p className="font-medium text-text-primary">
+            {format(new Date(data.uploadedAt), "MMM d, yyyy h:mm a")}
+          </p>
+        </div>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <KPICard label="Closing Balance" value={m.closingBalance} icon="💰" colorClass="text-primary" />
-        <KPICard label="Disbursement" value={m.disbursement} icon="📤" colorClass="text-success" />
-        <KPICard label="Collection" value={m.collection} icon="📥" colorClass="text-warning" />
-        <KPICard label="NPA" value={m.npa} icon="⚠️" colorClass="text-danger" />
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <KPICard label="Closing Balance" value={data.closingBalance} colorClass="bg-blue-500" />
+        <KPICard label="Disbursement" value={data.disbursement} colorClass="bg-green-500" />
+        <KPICard label="Collection" value={data.collection} colorClass="bg-purple-500" />
+        <KPICard label="NPA" value={data.npa} colorClass="bg-red-500" />
       </div>
 
-      <DpdBucketChart data={dpd} />
+      <div className="bg-surface border border-border rounded-xl p-6">
+        <h3 className="text-lg font-medium text-text-primary mb-6">DPD Buckets</h3>
+        <DpdBucketChart data={dpdArray} />
+      </div>
     </div>
   );
 }

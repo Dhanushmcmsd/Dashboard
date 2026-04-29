@@ -1,12 +1,30 @@
-import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { NextResponse } from "next/server";
+import { requireAuth } from "@/lib/auth-guard";
 import { pusherServer } from "@/lib/pusher-server";
 
-export async function POST(req: NextRequest) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const params = new URLSearchParams(await req.text());
-  const authResponse = pusherServer.authorizeChannel(params.get("socket_id") || "", params.get("channel_name") || "", { user_id: (session.user as { id: string }).id });
-  return NextResponse.json(authResponse);
+export async function POST(req: Request) {
+  try {
+    const auth = await requireAuth();
+    if (auth.error) {
+      return NextResponse.json({ error: auth.error }, { status: auth.status });
+    }
+
+    const data = await req.text();
+    const [socketId, channelName] = data
+      .split("&")
+      .map((str) => str.split("=")[1]);
+
+    if (!socketId || !channelName) {
+      return NextResponse.json({ error: "Missing parameters" }, { status: 400 });
+    }
+
+    const authResponse = pusherServer.authorizeChannel(socketId, channelName, {
+      user_id: auth.user.id,
+    });
+
+    return NextResponse.json(authResponse);
+  } catch (error) {
+    console.error("Pusher auth error:", error);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  }
 }

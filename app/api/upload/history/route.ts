@@ -1,17 +1,45 @@
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { requireAuth } from "@/lib/auth-guard";
 import { successResponse, errorResponse } from "@/lib/api-utils";
-import type { SessionUser } from "@/types";
+import { UploadRecord } from "@/types";
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user) return errorResponse("Unauthorized", 401);
-    const user = session.user as SessionUser;
-    const dbUser = await prisma.user.findUnique({ where: { email: user.email }, select: { id: true } });
-    if (!dbUser) return errorResponse("User not found", 401);
-    const uploads = await prisma.upload.findMany({ where: { uploadedBy: dbUser.id }, select: { id: true, branch: true, fileType: true, fileName: true, uploadedAt: true, dateKey: true, monthKey: true, user: { select: { name: true } } }, orderBy: { uploadedAt: "desc" }, take: 50 });
-    return successResponse(uploads.map((u) => ({ ...u, uploadedByName: u.user.name })));
-  } catch { return errorResponse("Failed to fetch upload history"); }
+    const auth = await requireAuth(["EMPLOYEE"]);
+    if (auth.error) {
+      return errorResponse(auth.error, auth.status);
+    }
+
+    const { searchParams } = new URL(req.url);
+    const branch = searchParams.get("branch");
+
+    const where: any = { uploadedBy: auth.user.id };
+    if (branch && auth.user.branches.includes(branch)) {
+      where.branch = branch;
+    }
+
+    const uploads = await prisma.upload.findMany({
+      where,
+      orderBy: { uploadedAt: "desc" },
+      take: 50,
+      include: { user: true },
+    });
+
+    const formatted: UploadRecord[] = uploads.map((u) => ({
+      id: u.id,
+      branch: u.branch,
+      fileType: u.fileType,
+      fileName: u.fileName,
+      uploadedAt: u.uploadedAt.toISOString(),
+      dateKey: u.dateKey,
+      monthKey: u.monthKey,
+      uploadedByName: u.user.name,
+    }));
+
+    return successResponse(formatted);
+  } catch (error) {
+    console.error("Upload history error:", error);
+    return errorResponse("Internal server error", 500);
+  }
 }

@@ -1,19 +1,39 @@
-import { NextRequest } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { requireAuth } from "@/lib/auth-guard";
 import { successResponse, errorResponse } from "@/lib/api-utils";
-import { buildDailySnapshot } from "@/lib/snapshot-generator";
 import { getTodayKey } from "@/lib/utils";
-import type { SessionUser, DailyDashboardData } from "@/types";
+import { buildDailySnapshot } from "@/lib/snapshot-generator";
 
-export async function GET(req: NextRequest) {
+export async function GET(req: Request) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user || (session.user as SessionUser).role !== "MANAGEMENT") return errorResponse("Forbidden", 403);
-    const dateKey = req.nextUrl.searchParams.get("date") ?? getTodayKey();
-    const snapshot = await prisma.dailySnapshot.findUnique({ where: { dateKey } });
-    const data: DailyDashboardData = snapshot ? (snapshot.combinedData as unknown as DailyDashboardData) : await buildDailySnapshot(dateKey);
-    return successResponse(data);
-  } catch { return errorResponse("Failed to fetch daily dashboard"); }
+    const auth = await requireAuth(["MANAGEMENT"]);
+    if (auth.error) {
+      return errorResponse(auth.error, auth.status);
+    }
+
+    const { searchParams } = new URL(req.url);
+    const dateKey = searchParams.get("date") || getTodayKey();
+
+    let snapshot = await prisma.dailySnapshot.findUnique({
+      where: { dateKey },
+    });
+
+    if (!snapshot) {
+      try {
+        const combinedData = await buildDailySnapshot(dateKey);
+        return successResponse(combinedData);
+      } catch (e: any) {
+        if (e.message === "Snapshot is already being built") {
+          return errorResponse("Snapshot is currently being generated. Please try again in a moment.", 503);
+        }
+        throw e;
+      }
+    }
+
+    return successResponse(snapshot.combinedData);
+  } catch (error) {
+    console.error("Daily dashboard error:", error);
+    return errorResponse("Internal server error", 500);
+  }
 }

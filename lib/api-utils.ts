@@ -1,8 +1,15 @@
 import { NextResponse } from "next/server";
-import { ZodError } from "zod";
-import type { ApiResponse } from "@/types";
-import { HTTP_STATUS } from "./constants";
+import { z } from "zod";
 
-export function successResponse<T>(data: T, status: number = HTTP_STATUS.OK) { return NextResponse.json({ success: true, data } satisfies ApiResponse<T>, { status }); }
-export function errorResponse(error: string, status: number = HTTP_STATUS.INTERNAL_ERROR) { return NextResponse.json({ success: false, error } satisfies ApiResponse, { status }); }
-export function validationError(err: ZodError) { const msg = err.issues.map((e) => `${e.path.join(".")}: ${e.message}`).join("; "); return errorResponse(msg, HTTP_STATUS.BAD_REQUEST); }
+export function successResponse<T>(data?: T, status = 200) {
+  return NextResponse.json({ success: true, data }, { status });
+}
+
+export function errorResponse(message: string, status = 400) {
+  return NextResponse.json({ success: false, error: message }, { status });
+}
+
+export function validationError(error: z.ZodError) {
+  const message = error.errors.map((e) => `${e.path.join(".")}: ${e.message}`).join(", ");
+  return errorResponse(message, 400);
+}

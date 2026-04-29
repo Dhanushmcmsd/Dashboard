@@ -1,108 +1,155 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
-import { apiFetch, QUERY_KEYS } from "@/lib/query-client";
-import type { MonthlyDashboardData } from "@/types";
+import { useMonthlyDashboard } from "@/hooks/useDashboardData";
+import { Loader2, RefreshCcw, CalendarDays, TrendingUp, TrendingDown, Minus } from "lucide-react";
+import { format } from "date-fns";
 import KPICard from "@/components/management/KPICard";
 import BranchComparisonChart from "@/components/management/BranchComparisonChart";
-import { formatINR } from "@/lib/utils";
+import { formatINRCompact } from "@/lib/utils";
 
-export default function MonthlyPage() {
-  const { data, isLoading, error } = useQuery({
-    queryKey: QUERY_KEYS.dashboardMonthly(),
-    queryFn: () => apiFetch<MonthlyDashboardData>("/api/dashboard/monthly"),
-    refetchInterval: 10 * 60 * 1000,
-  });
+export default function MonthlyDashboardPage() {
+  const { data, isLoading, isError, refetch } = useMonthlyDashboard();
 
   if (isLoading) {
     return (
-      <div className="flex items-center gap-2 text-text-muted text-sm animate-pulse">
-        <span className="w-4 h-4 border-2 border-text-muted/30 border-t-text-muted rounded-full animate-spin" />
-        Loading monthly data...
+      <div className="flex flex-col items-center justify-center h-64 space-y-4">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <p className="text-text-muted">Loading monthly dashboard...</p>
       </div>
     );
   }
 
-  if (error || !data) {
+  if (isError) {
     return (
-      <div className="bg-surface border border-danger/30 rounded-xl p-6 text-danger text-sm">
-        Failed to load monthly dashboard.
+      <div className="bg-danger/10 border border-danger/20 rounded-xl p-8 text-center max-w-lg mx-auto mt-12">
+        <h3 className="text-danger font-medium text-lg mb-2">Failed to load dashboard</h3>
+        <p className="text-danger/80 mb-6">There was an error fetching the monthly data.</p>
+        <button 
+          onClick={() => refetch()}
+          className="px-6 py-2 bg-surface border border-border rounded-lg font-medium hover:bg-elevated transition-colors inline-flex items-center"
+        >
+          <RefreshCcw className="w-4 h-4 mr-2" />
+          Refresh
+        </button>
       </div>
     );
   }
+
+  if (!data) return null;
 
   return (
-    <div>
-      <div className="flex items-start justify-between mb-6 flex-wrap gap-3">
+    <div className="space-y-8">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between bg-surface border border-border rounded-xl p-6">
         <div>
-          <h1 className="text-xl font-bold text-text-main">Monthly Dashboard</h1>
-          <p className="text-text-muted text-xs mt-0.5">
-            {data.monthKey} · Last updated {new Date(data.lastUpdated).toLocaleString("en-IN")}
+          <h2 className="text-2xl font-bold text-text-primary flex items-center gap-3">
+            Monthly Overview
+            <span className="flex items-center text-xs font-medium bg-elevated text-text-primary border border-border px-3 py-1 rounded-full">
+              <CalendarDays className="w-3 h-3 mr-1.5 text-text-muted" />
+              {data.monthKey}
+            </span>
+          </h2>
+          <p className="text-sm text-text-muted mt-2">
+            Aggregated monthly totals and month-over-month growth.
           </p>
         </div>
-        <span className="text-xs bg-primary/15 text-primary font-medium px-3 py-1.5 rounded-full">
-          {data.branches.length} branches reporting
-        </span>
-      </div>
-
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <KPICard label="Closing Balance" value={data.totals.closingBalance} icon="💰" colorClass="text-primary" />
-        <KPICard label="Disbursement" value={data.totals.disbursement} icon="📤" colorClass="text-success" />
-        <KPICard label="Collection" value={data.totals.collection} icon="📥" colorClass="text-warning" />
-        <KPICard label="NPA" value={data.totals.npa} icon="⚠️" colorClass="text-danger" />
-      </div>
-
-      {data.branches.length > 0 && (
-        <div className="mb-6">
-          <BranchComparisonChart branches={data.branches} />
-        </div>
-      )}
-
-      {data.branches.length > 0 ? (
-        <div className="bg-surface border border-border rounded-xl overflow-x-auto">
-          <div className="px-5 py-3 border-b border-border">
-            <h3 className="text-sm font-semibold text-text-main">Monthly Branch Performance</h3>
+        <div className="mt-4 md:mt-0 text-left md:text-right">
+          <div className="flex items-center gap-3 md:justify-end mb-1">
+            <span className="text-sm font-medium px-2.5 py-1 bg-surface border border-border rounded text-text-primary">
+              {data.branches.length}
+            </span>
+            <span className="text-xs text-text-muted uppercase tracking-wider">Active Branches</span>
           </div>
-          <table className="w-full text-sm">
-            <thead>
-              <tr>
-                {["Branch", "Closing Balance", "vs Last Month", "Disbursement", "Collection", "NPA", "Last upload"].map((h) => (
-                  <th key={h} className="text-left text-text-muted text-xs uppercase tracking-wider font-medium px-4 py-3 bg-background/30 whitespace-nowrap">
-                    {h}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {data.branches.map((b) => (
-                <tr key={b.branch} className="border-t border-border/50 hover:bg-border/10 transition">
-                  <td className="px-4 py-3 font-medium text-text-main whitespace-nowrap">{b.branch}</td>
-                  <td className="px-4 py-3 font-mono text-primary whitespace-nowrap">{formatINR(b.closingBalance)}</td>
-                  <td className="px-4 py-3 whitespace-nowrap">
-                    {b.growthPercent === null ? (
-                      <span className="text-text-muted text-xs">No previous data</span>
-                    ) : (
-                      <span className={`text-xs font-semibold ${b.trend === "up" ? "text-success" : b.trend === "down" ? "text-danger" : "text-text-muted"}`}>
-                        {b.trend === "up" ? "↑" : b.trend === "down" ? "↓" : "→"} {Math.abs(b.growthPercent).toFixed(2)}%
-                      </span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3 font-mono text-success whitespace-nowrap">{formatINR(b.disbursement)}</td>
-                  <td className="px-4 py-3 font-mono text-warning whitespace-nowrap">{formatINR(b.collection)}</td>
-                  <td className="px-4 py-3 font-mono text-danger whitespace-nowrap">{formatINR(b.npa)}</td>
-                  <td className="px-4 py-3 text-text-muted text-xs whitespace-nowrap">
-                    {new Date(b.uploadedAt).toLocaleDateString("en-IN")}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <p className="text-xs text-text-muted">
+            Last calculated: {format(new Date(data.lastUpdated), "MMM d, h:mm a")}
+          </p>
+        </div>
+      </div>
+
+      {data.branches.length === 0 ? (
+        <div className="bg-surface border border-border rounded-xl p-16 text-center">
+          <CalendarDays className="w-16 h-16 text-text-muted mx-auto mb-4 opacity-50" />
+          <h3 className="text-xl font-medium text-text-primary mb-2">No Monthly Data</h3>
+          <p className="text-text-muted max-w-md mx-auto">
+            No branch data has been uploaded for {data.monthKey} yet.
+          </p>
         </div>
       ) : (
-        <div className="bg-surface border border-border rounded-2xl p-10 text-center">
-          <span className="text-5xl block mb-3">📭</span>
-          <p className="text-text-main font-semibold">No data for this month yet</p>
-        </div>
+        <>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <KPICard label="Monthly Closing Balance" value={data.totals.closingBalance} colorClass="bg-blue-500" />
+            <KPICard label="Monthly Disbursement" value={data.totals.disbursement} colorClass="bg-green-500" />
+            <KPICard label="Monthly Collection" value={data.totals.collection} colorClass="bg-purple-500" />
+            <KPICard label="Monthly NPA" value={data.totals.npa} colorClass="bg-red-500" />
+          </div>
+
+          <div className="bg-surface border border-border rounded-xl p-6">
+            <h3 className="text-lg font-medium text-text-primary mb-6">Branch Comparison (Monthly)</h3>
+            <div className="h-[400px]">
+              <BranchComparisonChart branches={data.branches} />
+            </div>
+          </div>
+
+          <div className="bg-surface border border-border rounded-xl overflow-hidden">
+            <div className="p-6 border-b border-border bg-elevated/50">
+              <h3 className="text-lg font-medium text-text-primary">Branch Monthly Breakdown</h3>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm text-left">
+                <thead className="text-xs text-text-muted uppercase bg-elevated border-b border-border">
+                  <tr>
+                    <th className="px-6 py-4">Branch</th>
+                    <th className="px-6 py-4 text-right">Closing Balance</th>
+                    <th className="px-6 py-4 text-center">vs Last Month</th>
+                    <th className="px-6 py-4 text-right">Disbursement</th>
+                    <th className="px-6 py-4 text-right">Collection</th>
+                    <th className="px-6 py-4 text-right">NPA</th>
+                    <th className="px-6 py-4 text-right">Last Upload</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {data.branches.map((b) => (
+                    <tr key={b.branch} className="hover:bg-elevated/50 transition-colors">
+                      <td className="px-6 py-4 font-medium text-text-primary">{b.branch}</td>
+                      <td className="px-6 py-4 text-right">{formatINRCompact(b.closingBalance)}</td>
+                      <td className="px-6 py-4 text-center">
+                        {b.growthPercent !== null ? (
+                          <div className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium ${
+                            b.trend === "up" ? "text-success bg-success/10" : 
+                            b.trend === "down" ? "text-danger bg-danger/10" : 
+                            "text-text-muted bg-surface"
+                          }`}>
+                            {b.trend === "up" && <TrendingUp className="w-3 h-3" />}
+                            {b.trend === "down" && <TrendingDown className="w-3 h-3" />}
+                            {b.trend === "neutral" && <Minus className="w-3 h-3" />}
+                            {Math.abs(b.growthPercent)}%
+                          </div>
+                        ) : (
+                          <span className="text-text-muted text-xs">—</span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 text-right">{formatINRCompact(b.disbursement)}</td>
+                      <td className="px-6 py-4 text-right">{formatINRCompact(b.collection)}</td>
+                      <td className="px-6 py-4 text-right text-danger">{formatINRCompact(b.npa)}</td>
+                      <td className="px-6 py-4 text-right text-text-muted text-xs">
+                        {format(new Date(b.uploadedAt), "MMM d")}
+                      </td>
+                    </tr>
+                  ))}
+                  <tr className="bg-elevated font-semibold text-text-primary border-t-2 border-border/80">
+                    <td className="px-6 py-4">Total</td>
+                    <td className="px-6 py-4 text-right text-blue-400">{formatINRCompact(data.totals.closingBalance)}</td>
+                    <td className="px-6 py-4 text-center text-text-muted">—</td>
+                    <td className="px-6 py-4 text-right text-green-400">{formatINRCompact(data.totals.disbursement)}</td>
+                    <td className="px-6 py-4 text-right text-purple-400">{formatINRCompact(data.totals.collection)}</td>
+                    <td className="px-6 py-4 text-right text-danger">{formatINRCompact(data.totals.npa)}</td>
+                    <td className="px-6 py-4 text-right text-text-muted text-xs">—</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </>
       )}
     </div>
   );

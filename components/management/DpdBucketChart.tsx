@@ -1,68 +1,53 @@
 "use client";
 
-import {
-  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
-  Cell, CartesianGrid,
-} from "recharts";
+import { DpdBucketData } from "@/types";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from "recharts";
 import { formatINRCompact } from "@/lib/utils";
-import type { DpdBucketData } from "@/types";
 
-const BUCKET_COLORS = ["#16A34A", "#65A30D", "#D97706", "#EA580C", "#DC2626", "#7F1D1D"];
+interface Props {
+  data: DpdBucketData[];
+}
 
-export default function DpdBucketChart({ data }: { data: DpdBucketData[] }) {
-  const chartData = data.map((d) => ({
-    name: `${d.bucket}`,
-    amount: d.amount,
-    count: d.count,
-  }));
+const COLORS = [
+  "#16A34A", // 0
+  "#84CC16", // 1-30
+  "#EAB308", // 31-60
+  "#F59E0B", // 61-90
+  "#EF4444", // 91-180
+  "#991B1B", // 181+
+];
 
+export default function DpdBucketChart({ data }: Props) {
   return (
-    <div
-      className="relative overflow-hidden rounded-xl p-5"
-      style={{
-        background: "#111116",
-        border: "1px solid rgba(255,255,255,0.06)",
-        boxShadow: "0 4px 24px rgba(0,0,0,0.4)",
-      }}
-    >
-      <div
-        className="absolute top-0 left-0 right-0 h-px"
-        style={{ background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.07), transparent)" }}
-      />
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-sm font-semibold" style={{ color: "#E2E8F0" }}>
-          DPD Bucket Distribution
-        </h3>
-        <span className="text-xs" style={{ color: "#64748B" }}>Days Past Due</span>
-      </div>
-      <ResponsiveContainer width="100%" height={210}>
-        <BarChart data={chartData} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#2A2A35" vertical={false} />
-          <XAxis
-            dataKey="name"
-            tick={{ fill: "#64748B", fontSize: 10 }}
+    <div className="h-[300px] w-full">
+      <ResponsiveContainer width="100%" height="100%">
+        <BarChart data={data} margin={{ top: 10, right: 10, left: 0, bottom: 20 }}>
+          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.1)" />
+          <XAxis 
+            dataKey="bucket" 
             axisLine={false}
             tickLine={false}
+            tick={{ fill: "#64748B", fontSize: 12 }}
+            dy={10}
           />
-          <YAxis hide />
+          <YAxis 
+            axisLine={false}
+            tickLine={false}
+            tick={{ fill: "#64748B", fontSize: 12 }}
+            tickFormatter={(value) => formatINRCompact(value)}
+          />
           <Tooltip
-            contentStyle={{
-              background: "#18181F",
-              border: "1px solid rgba(255,255,255,0.08)",
-              borderRadius: 10,
-              fontSize: 12,
-              color: "#E2E8F0",
+            cursor={{ fill: "rgba(255,255,255,0.05)" }}
+            contentStyle={{ backgroundColor: "#18181F", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "8px" }}
+            formatter={(value: number, name: string) => {
+              if (name === "amount") return [formatINRCompact(value), "Amount"];
+              return [value, "Accounts"];
             }}
-            labelStyle={{ color: "#E2E8F0", fontWeight: 600, marginBottom: 4 }}
-            formatter={(value, _name, props) => [
-              `${formatINRCompact(Number(value))} · ${props.payload.count} accounts`,
-              "Amount",
-            ]}
-            cursor={{ fill: "rgba(255,255,255,0.03)" }}
+            labelStyle={{ color: "#E2E8F0", marginBottom: "4px" }}
           />
-          <Bar dataKey="amount" radius={[5, 5, 0, 0]} maxBarSize={48}>
-            {chartData.map((_, i) => (
-              <Cell key={`cell-${i}`} fill={BUCKET_COLORS[i] ?? "#2563EB"} />
+          <Bar dataKey="amount" radius={[4, 4, 0, 0]} maxBarSize={60}>
+            {data.map((entry, index) => (
+              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
             ))}
           </Bar>
         </BarChart>

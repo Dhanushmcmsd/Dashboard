@@ -1,18 +1,23 @@
 import type { Metadata } from "next";
-import type { ReactNode } from "react";
 import { GeistSans } from "geist/font/sans";
-import { GeistMono } from "geist/font/mono";
 import "./globals.css";
 import QueryProvider from "@/components/providers/QueryProvider";
 import AuthProvider from "@/components/providers/AuthProvider";
 import { Toaster } from "sonner";
 
-export const metadata: Metadata = { title: "Branch Dashboard", description: "Multi-branch financial dashboard" };
+export const metadata: Metadata = {
+  title: "BranchSync Dashboard",
+  description: "Financial branch management and analytics",
+};
 
-export default function RootLayout({ children }: { children: ReactNode }) {
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
-    <html lang="en" className={`${GeistSans.variable} ${GeistMono.variable} dark`}>
-      <body className="bg-background text-text-main font-sans antialiased">
+    <html lang="en" className={`dark ${GeistSans.className}`}>
+      <body className="bg-background text-text-primary min-h-screen antialiased">
         <AuthProvider>
           <QueryProvider>
             {children}

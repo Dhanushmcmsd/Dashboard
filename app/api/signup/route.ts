@@ -1,39 +1,47 @@
-import { NextRequest } from "next/server";
-import { z } from "zod";
+import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { successResponse, errorResponse } from "@/lib/api-utils";
+import { successResponse, errorResponse, validationError } from "@/lib/api-utils";
+import { SignupSchema } from "@/lib/validations";
+import bcrypt from "bcryptjs";
+import { sendWelcomeEmail } from "@/lib/email";
 
-const Schema = z.object({
-  name: z.string().min(2).max(100),
-  email: z.string().email(),
-});
-
-export async function POST(req: NextRequest) {
+export async function POST(req: Request) {
   try {
-    const parsed = Schema.safeParse(await req.json());
-    if (!parsed.success) {
-      const msg = parsed.error.issues.map((i) => i.message).join("; ");
-      return errorResponse(msg, 400);
+    const body = await req.json();
+    const result = SignupSchema.safeParse(body);
+    if (!result.success) {
+      return validationError(result.error);
     }
 
-    const { name, email } = parsed.data;
-    const exists = await prisma.user.findUnique({ where: { email } });
-    if (exists) return errorResponse("This email is already registered.", 409);
+    const existingUser = await prisma.user.findUnique({
+      where: { email: result.data.email },
+    });
 
-    await prisma.user.create({
+    if (existingUser) {
+      return errorResponse("User with this email already exists", 400);
+    }
+
+    // Hash a random password since they will set it via link later
+    const randomPassword = Math.random().toString(36).slice(-10);
+    const hashedPassword = await bcrypt.hash(randomPassword, 10);
+
+    const user = await prisma.user.create({
       data: {
-        name,
-        email,
-        password: "",
+        name: result.data.name,
+        email: result.data.email,
+        password: hashedPassword,
         role: "EMPLOYEE",
-        branches: [],
         isActive: false,
         passwordSet: false,
+        branches: [],
       },
     });
 
-    return successResponse({ registered: true, message: "Account pending admin approval" }, 201);
-  } catch {
-    return errorResponse("Registration failed. Please try again.");
+    await sendWelcomeEmail(user.email, user.name);
+
+    return successResponse({ registered: true }, 201);
+  } catch (error) {
+    console.error("Signup error:", error);
+    return errorResponse("Internal server error", 500);
   }
 }

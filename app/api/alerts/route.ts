@@ -1,34 +1,72 @@
-import { NextRequest } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { requireAuth } from "@/lib/auth-guard";
 import { successResponse, errorResponse, validationError } from "@/lib/api-utils";
 import { AlertCreateSchema } from "@/lib/validations";
-import { pusherServer } from "@/lib/pusher-server";
-import { PUSHER_CHANNELS, PUSHER_EVENTS, HTTP_STATUS } from "@/lib/constants";
-import type { SessionUser } from "@/types";
+import { pusherServer, PUSHER_CHANNELS, PUSHER_EVENTS } from "@/lib/pusher-server";
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user) return errorResponse("Unauthorized", HTTP_STATUS.UNAUTHORIZED);
-    const alerts = await prisma.alert.findMany({ orderBy: { sentAt: "desc" }, take: 50, select: { id: true, message: true, sentAt: true, user: { select: { id: true, name: true } } } });
-    return successResponse(alerts.map((a) => ({ id: a.id, message: a.message, sentBy: a.user.id, sentByName: a.user.name, sentAt: a.sentAt.toISOString() })));
-  } catch { return errorResponse("Failed to fetch alerts"); }
+    const auth = await requireAuth();
+    if (auth.error) {
+      return errorResponse(auth.error, auth.status);
+    }
+
+    const alerts = await prisma.alert.findMany({
+      orderBy: { sentAt: "desc" },
+      take: 50,
+      include: { user: true },
+    });
+
+    const formatted = alerts.map((a) => ({
+      id: a.id,
+      message: a.message,
+      sentBy: a.sentBy,
+      sentByName: a.user.name,
+      sentAt: a.sentAt.toISOString(),
+    }));
+
+    return successResponse(formatted);
+  } catch (error) {
+    console.error("Fetch alerts error:", error);
+    return errorResponse("Internal server error", 500);
+  }
 }
 
-export async function POST(req: NextRequest) {
+export async function POST(req: Request) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user || (session.user as SessionUser).role !== "MANAGEMENT") return errorResponse("Forbidden", HTTP_STATUS.FORBIDDEN);
-    const user = session.user as SessionUser;
-    const parsed = AlertCreateSchema.safeParse(await req.json());
-    if (!parsed.success) return validationError(parsed.error);
-    const dbUser = await prisma.user.findUnique({ where: { email: user.email }, select: { id: true } });
-    if (!dbUser) return errorResponse("User not found", 401);
-    const alert = await prisma.alert.create({ data: { message: parsed.data.message, sentBy: dbUser.id }, select: { id: true, message: true, sentAt: true, user: { select: { id: true, name: true } } } });
-    const payload = { id: alert.id, message: alert.message, sentBy: alert.user.id, sentByName: alert.user.name, sentAt: alert.sentAt.toISOString() };
-    await pusherServer.trigger(PUSHER_CHANNELS.ALERTS, PUSHER_EVENTS.NEW_ALERT, payload);
-    return successResponse(payload, HTTP_STATUS.CREATED);
-  } catch { return errorResponse("Failed to send alert"); }
+    const auth = await requireAuth(["MANAGEMENT"]);
+    if (auth.error) {
+      return errorResponse(auth.error, auth.status);
+    }
+
+    const body = await req.json();
+    const result = AlertCreateSchema.safeParse(body);
+    if (!result.success) {
+      return validationError(result.error);
+    }
+
+    const alert = await prisma.alert.create({
+      data: {
+        message: result.data.message,
+        sentBy: auth.user.id,
+      },
+      include: { user: true },
+    });
+
+    const formatted = {
+      id: alert.id,
+      message: alert.message,
+      sentBy: alert.sentBy,
+      sentByName: alert.user.name,
+      sentAt: alert.sentAt.toISOString(),
+    };
+
+    await pusherServer.trigger(PUSHER_CHANNELS.PRIVATE_ALERTS, PUSHER_EVENTS.NEW_ALERT, formatted);
+
+    return successResponse(formatted, 201);
+  } catch (error) {
+    console.error("Create alert error:", error);
+    return errorResponse("Internal server error", 500);
+  }
 }

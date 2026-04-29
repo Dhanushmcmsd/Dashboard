@@ -1,75 +1,65 @@
 "use client";
 
 import { useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
-import type { CSSProperties } from "react";
-import { BRANCHES, BRANCH_COLORS } from "@/lib/constants";
-import type { BranchName, SessionUser } from "@/types";
+import Link from "next/link";
+import { Building2, ShoppingCart, Coins, TrendingUp, CarFront, UserCircle2 } from "lucide-react";
+import { BRANCHES } from "@/types";
 
-const BRANCH_META: Record<BranchName, { icon: string; desc: string }> = {
-  "Supermarket": { icon: "🛒", desc: "Retail and FMCG daily data" },
-  "Gold Loan": { icon: "🥇", desc: "Gold-secured loan metrics" },
-  "ML Loan": { icon: "📊", desc: "Microfinance loan data" },
-  "Vehicle Loan": { icon: "🚗", desc: "Auto loan portfolio data" },
-  "Personal Loan": { icon: "👤", desc: "Personal credit metrics" },
+const getBranchIcon = (branch: string) => {
+  switch (branch) {
+    case "Supermarket": return <ShoppingCart className="w-8 h-8" />;
+    case "Gold Loan": return <Coins className="w-8 h-8" />;
+    case "ML Loan": return <TrendingUp className="w-8 h-8" />;
+    case "Vehicle Loan": return <CarFront className="w-8 h-8" />;
+    case "Personal Loan": return <UserCircle2 className="w-8 h-8" />;
+    default: return <Building2 className="w-8 h-8" />;
+  }
 };
 
-type BranchVars = CSSProperties & {
-  "--branch-bg": string;
-  "--branch-border": string;
-  "--branch-color": string;
-};
-
-export default function EmployeePage() {
+export default function EmployeeHomePage() {
   const { data: session } = useSession();
-  const router = useRouter();
-  const user = session?.user as SessionUser | undefined;
-  const assigned = (user?.branches ?? []) as BranchName[];
-  const available = BRANCHES.filter((b) => assigned.includes(b));
+  const userBranches = session?.user?.branches || [];
 
   return (
-    <div>
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-text-main">Select Branch</h1>
-        <p className="text-text-muted text-sm mt-1">Choose the branch you want to upload data for today.</p>
+    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <div>
+        <h2 className="text-3xl font-bold text-text-primary">Select Branch</h2>
+        <p className="text-text-muted mt-2 text-lg">Choose a branch to upload today's data.</p>
       </div>
 
-      {available.length === 0 ? (
-        <div className="bg-surface border border-warning/30 rounded-2xl p-8 text-center">
-          <span className="text-4xl block mb-3">⚠️</span>
-          <h3 className="text-text-main font-semibold mb-1">No branches assigned</h3>
-          <p className="text-text-muted text-sm">Contact your admin to assign branches to your account.</p>
+      {userBranches.length === 0 ? (
+        <div className="bg-surface border border-border rounded-xl p-12 text-center">
+          <Building2 className="w-12 h-12 text-text-muted mx-auto mb-4 opacity-50" />
+          <h3 className="text-xl font-medium text-text-primary mb-2">No Branches Assigned</h3>
+          <p className="text-text-muted max-w-md mx-auto">
+            You currently don't have any branches assigned to your account. Please contact your administrator.
+          </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {available.map((branch) => {
-            const meta = BRANCH_META[branch];
-            const color = BRANCH_COLORS[branch];
-            const vars: BranchVars = {
-              "--branch-bg": `${color}20`,
-              "--branch-border": `${color}40`,
-              "--branch-color": color,
-            };
-
-            return (
-              <button
-                key={branch}
-                onClick={() => router.push(`/employee/upload?branch=${encodeURIComponent(branch)}`)}
-                className="group text-left bg-surface border border-border rounded-2xl p-6 hover:border-[var(--branch-border)] active:scale-[0.98] transition-all duration-150 hover:shadow-lg hover:shadow-black/20"
-                style={vars}
-              >
-                <div className="flex items-start justify-between mb-4">
-                  <div className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl bg-[var(--branch-bg)] border border-[var(--branch-border)]">
-                    {meta.icon}
-                  </div>
-                  <span className="text-text-muted text-xs opacity-0 group-hover:opacity-100 transition">Upload</span>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {BRANCHES.filter(b => userBranches.includes(b)).map((branch) => (
+            <Link 
+              key={branch}
+              href={`/employee/upload?branch=${encodeURIComponent(branch)}`}
+              className="group bg-surface border border-border hover:border-primary/50 hover:bg-elevated rounded-2xl p-6 transition-all shadow-sm hover:shadow-primary/5 relative overflow-hidden"
+            >
+              {/* Card glow effect on hover */}
+              <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+              
+              <div className="relative z-10 flex flex-col h-full">
+                <div className="w-14 h-14 bg-elevated group-hover:bg-primary/10 group-hover:text-primary rounded-xl flex items-center justify-center text-text-muted transition-colors mb-6">
+                  {getBranchIcon(branch)}
                 </div>
-                <h3 className="text-text-main font-semibold text-base mb-1">{branch}</h3>
-                <p className="text-text-muted text-xs">{meta.desc}</p>
-                <div className="mt-4 h-0.5 rounded-full opacity-30 bg-[var(--branch-color)]" />
-              </button>
-            );
-          })}
+                
+                <h3 className="text-xl font-semibold text-text-primary mb-2">{branch}</h3>
+                <p className="text-text-muted text-sm flex-1">Upload daily data sheets for {branch} branch operations.</p>
+                
+                <div className="mt-6 flex items-center text-sm font-medium text-primary opacity-0 group-hover:opacity-100 transition-opacity transform translate-y-2 group-hover:translate-y-0 duration-300">
+                  Proceed to Upload &rarr;
+                </div>
+              </div>
+            </Link>
+          ))}
         </div>
       )}
     </div>

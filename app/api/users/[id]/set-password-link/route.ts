@@ -1,37 +1,52 @@
-import { NextRequest } from "next/server";
-import { getServerSession } from "next-auth";
-import { SignJWT } from "jose";
-import { authOptions } from "@/lib/auth";
+import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { requireAuth } from "@/lib/auth-guard";
 import { successResponse, errorResponse } from "@/lib/api-utils";
+import * as jwt from "jsonwebtoken";
 
-export async function GET(_: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(req: Request, { params }: { params: { id: string } }) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user || (session.user as { role: string }).role !== "ADMIN") {
-      return errorResponse("Forbidden", 403);
+    const auth = await requireAuth(["ADMIN"]);
+    if (auth.error) {
+      return errorResponse(auth.error, auth.status);
     }
-
-    if (!process.env.NEXTAUTH_SECRET) return errorResponse("NEXTAUTH_SECRET is not configured", 500);
 
     const user = await prisma.user.findUnique({
       where: { id: params.id },
-      select: { id: true, isActive: true, passwordSet: true },
     });
-    if (!user) return errorResponse("User not found", 404);
-    if (!user.isActive) return errorResponse("User is not active yet", 400);
-    if (user.passwordSet) return errorResponse("User has already set their password", 400);
 
-    const secret = new TextEncoder().encode(process.env.NEXTAUTH_SECRET);
-    const token = await new SignJWT({ userId: user.id })
-      .setProtectedHeader({ alg: "HS256" })
-      .setExpirationTime("7d")
-      .setIssuedAt()
-      .sign(secret);
+    if (!user) {
+      return errorResponse("User not found", 404);
+    }
 
-    const baseUrl = process.env.NEXTAUTH_URL ?? "http://localhost:3000";
-    return successResponse({ link: `${baseUrl}/set-password?token=${token}` });
-  } catch {
-    return errorResponse("Failed to generate link");
+    if (!user.isActive) {
+      return errorResponse("Cannot generate link for pending user. Approve first.", 400);
+    }
+
+    if (user.passwordSet) {
+      return errorResponse("User already has a password set", 400);
+    }
+
+    const JWT_SECRET = process.env.NEXTAUTH_SECRET || process.env.JWT_SECRET;
+    if (!JWT_SECRET) {
+      return errorResponse("Server configuration error", 500);
+    }
+
+    const token = jwt.sign(
+      { userId: user.id },
+      JWT_SECRET,
+      { expiresIn: "7d" }
+    );
+
+    // Get origin from request headers or environment
+    const url = new URL(req.url);
+    const baseUrl = process.env.NEXTAUTH_URL || `${url.protocol}//${url.host}`;
+    
+    const link = `${baseUrl}/set-password?token=${token}`;
+
+    return successResponse({ link });
+  } catch (error) {
+    console.error("Generate password link error:", error);
+    return errorResponse("Internal server error", 500);
   }
 }

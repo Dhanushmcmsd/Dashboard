@@ -1,18 +1,36 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { successResponse, errorResponse } from "@/lib/api-utils";
 
-export async function GET(req: NextRequest) {
-  const email = req.nextUrl.searchParams.get("email");
-  if (!email) return NextResponse.json({ exists: false });
+export async function GET(req: Request) {
+  try {
+    const { searchParams } = new URL(req.url);
+    const email = searchParams.get("email");
 
-  const user = await prisma.user.findUnique({
-    where: { email },
-    select: { isActive: true, passwordSet: true },
-  });
+    if (!email) {
+      return errorResponse("Email is required");
+    }
 
-  return NextResponse.json({
-    exists: !!user,
-    isActive: user?.isActive ?? false,
-    passwordSet: user?.passwordSet ?? false,
-  });
+    const user = await prisma.user.findUnique({
+      where: { email },
+      select: {
+        id: true,
+        isActive: true,
+        passwordSet: true,
+      },
+    });
+
+    if (!user) {
+      return successResponse({ exists: false, isActive: false, passwordSet: false });
+    }
+
+    return successResponse({
+      exists: true,
+      isActive: user.isActive,
+      passwordSet: user.passwordSet,
+    });
+  } catch (error) {
+    console.error("Check email error:", error);
+    return errorResponse("Internal server error", 500);
+  }
 }

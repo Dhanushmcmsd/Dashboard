@@ -1,36 +1,46 @@
-import { getServerSession } from "next-auth";
-import { redirect } from "next/navigation";
-import Link from "next/link";
+import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
+import { redirect } from "next/navigation";
 import AlertToast from "@/components/shared/AlertToast";
+import Link from "next/link";
+import { LogOut } from "lucide-react";
+import SignOutButton from "@/components/employee/SignOutButton";
 
 export default async function EmployeeLayout({ children }: { children: React.ReactNode }) {
   const session = await getServerSession(authOptions);
-  if (!session || (session.user as { role: string }).role !== "EMPLOYEE") redirect("/login");
+
+  if (!session || session.user.role !== "EMPLOYEE") {
+    redirect("/login");
+  }
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      <AlertToast />
-      <header className="h-14 bg-surface border-b border-border flex items-center px-6 gap-4 shrink-0">
-        <div className="flex items-center gap-2.5">
-          <div className="w-7 h-7 rounded-lg bg-primary/20 flex items-center justify-center">
-            <span className="text-sm">📤</span>
-          </div>
-          <span className="text-text-main font-bold text-sm">Upload Portal</span>
-        </div>
-        <div className="ml-auto flex items-center gap-3">
-          <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-full bg-primary/20 flex items-center justify-center text-xs font-bold text-primary">
-              {(session.user?.name ?? "E")[0].toUpperCase()}
-            </div>
-            <span className="text-text-muted text-sm hidden sm:block">{session.user?.name}</span>
-          </div>
-          <Link href="/api/auth/signout" className="text-xs text-danger/70 hover:text-danger transition px-2 py-1">
-            Sign out
+    <div className="min-h-screen flex flex-col bg-[#0A0A0C]">
+      {/* Header */}
+      <header className="bg-surface border-b border-border sticky top-0 z-40">
+        <div className="max-w-5xl mx-auto px-4 md:px-6 h-16 flex items-center justify-between">
+          <Link href="/employee" className="flex items-center gap-2">
+            <h1 className="text-xl font-bold text-white tracking-tight">Branch<span className="text-primary">Sync</span></h1>
           </Link>
+          
+          <div className="flex items-center gap-4">
+            <div className="hidden md:block text-right">
+              <p className="text-sm font-medium text-text-primary">{session.user.name}</p>
+              <p className="text-xs text-text-muted">Employee Portal</p>
+            </div>
+            <div className="w-px h-8 bg-border hidden md:block"></div>
+            <SignOutButton />
+          </div>
         </div>
       </header>
-      <main className="flex-1 p-6 max-w-3xl mx-auto w-full">{children}</main>
+
+      {/* Main Content */}
+      <main className="flex-1 p-4 md:p-6 lg:p-8">
+        <div className="max-w-5xl mx-auto">
+          {children}
+        </div>
+      </main>
+
+      <AlertToast />
     </div>
   );
 }

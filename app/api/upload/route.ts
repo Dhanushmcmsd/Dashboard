@@ -1,97 +1,111 @@
-import { NextRequest, NextResponse } from "next/server";
-import { requireAuth } from "@/lib/auth-guard";
+import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { requireAuth } from "@/lib/auth-guard";
 import { successResponse, errorResponse } from "@/lib/api-utils";
-import { HTTP_STATUS, UPLOAD_LIMITS, PUSHER_CHANNELS, PUSHER_EVENTS, BRANCHES } from "@/lib/constants";
+import { getTodayKey, getMonthKey } from "@/lib/utils";
 import { parseExcelBuffer } from "@/lib/excel-parser";
 import { parseHtmlContent } from "@/lib/html-parser";
 import { buildDailySnapshot } from "@/lib/snapshot-generator";
-import { getTodayKey, getMonthKey } from "@/lib/utils";
-import { pusherServer } from "@/lib/pusher-server";
-import type { BranchName, SessionUser } from "@/types";
-import { rateLimit } from "@/lib/rate-limit";
+import { pusherServer, PUSHER_CHANNELS, PUSHER_EVENTS } from "@/lib/pusher-server";
+import rateLimit from "@/lib/rate-limit";
+import { Prisma } from "@prisma/client";
 
-const uploadLimiter = rateLimit({ interval: 60_000, uniqueTokenPerInterval: 500 });
+const limiter = rateLimit({ interval: 60000, uniqueTokenPerInterval: 500 });
 
-export async function POST(req: NextRequest) {
+export async function POST(req: Request) {
   try {
-    await uploadLimiter.check(req, 10, "UPLOAD");
-  } catch {
-    return NextResponse.json({ error: "Too many requests" }, { status: 429 });
-  }
+    const ip = req.headers.get("x-forwarded-for") || "127.0.0.1";
+    try {
+      await limiter.check(10, ip);
+    } catch {
+      return errorResponse("Rate limit exceeded. Try again later.", 429);
+    }
 
-  try {
-    const { error, user } = await requireAuth("EMPLOYEE");
-    if (error) return error;
+    const auth = await requireAuth(["EMPLOYEE"]);
+    if (auth.error) {
+      return errorResponse(auth.error, auth.status);
+    }
 
+    const user = auth.user;
     const formData = await req.formData();
-    const file = formData.get("file") as File | null;
-    const branch = formData.get("branch") as string | null;
-    if (!file || !branch) return errorResponse("file and branch are required", HTTP_STATUS.BAD_REQUEST);
-    if (!BRANCHES.includes(branch as BranchName)) return errorResponse("Invalid branch", HTTP_STATUS.BAD_REQUEST);
-    if (!user.branches.includes(branch)) return errorResponse("Not assigned to this branch", HTTP_STATUS.FORBIDDEN);
-    
+    const file = formData.get("file") as File;
+    const branch = formData.get("branch") as string;
+
+    if (!file || !branch) {
+      return errorResponse("File and branch are required", 400);
+    }
+
+    if (!user.branches.includes(branch)) {
+      return errorResponse("You are not assigned to this branch", 403);
+    }
+
     if (file.size > 5 * 1024 * 1024) {
-      return NextResponse.json({ error: "File too large. Maximum size is 5MB." }, { status: 413 });
+      return errorResponse("File size exceeds 5MB limit", 400);
     }
 
-    const ALLOWED_MIME_TYPES = [
-      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      "text/csv",
-      "application/csv",
-      "text/html",
-      "application/xhtml+xml",
-    ];
-    if (!ALLOWED_MIME_TYPES.includes(file.type) && file.type !== "") {
-      return NextResponse.json({ error: "Invalid file type. Only Excel, CSV, or HTML files are allowed." }, { status: 400 });
+    const fileName = file.name.toLowerCase();
+    const isExcel = fileName.endsWith(".xlsx") || fileName.endsWith(".xls");
+    const isHtml = fileName.endsWith(".html") || fileName.endsWith(".htm");
+
+    if (!isExcel && !isHtml) {
+      return errorResponse("Only Excel and HTML files are allowed", 400);
     }
 
-    const isExcel = UPLOAD_LIMITS.ALLOWED_EXCEL_TYPES.some((t) => t === file.type);
-    const isHtml = UPLOAD_LIMITS.ALLOWED_HTML_TYPES.some((t) => t === file.type) || file.name.endsWith(".html");
-    if (!isExcel && !isHtml) return errorResponse("Only Excel or HTML files are allowed", HTTP_STATUS.BAD_REQUEST);
+    const arrayBuffer = await file.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+    
+    let parsedData = null;
+    let htmlContent = null;
+
+    if (isExcel) {
+      const rows = parseExcelBuffer(arrayBuffer);
+      // We assume the employee uploads a file containing their branch
+      const branchRow = rows.find(r => r.branch.toLowerCase() === branch.toLowerCase());
+      if (!branchRow) {
+        return errorResponse("Could not find data for the selected branch in the file", 400);
+      }
+      parsedData = branchRow;
+    } else {
+      htmlContent = buffer.toString("utf-8");
+      parsedData = parseHtmlContent(htmlContent);
+      if (parsedData.branch.toLowerCase() !== branch.toLowerCase()) {
+         // Optionally force branch to be the selected one if parsing is fuzzy
+         parsedData.branch = branch as any;
+      }
+    }
 
     const dateKey = getTodayKey();
     const monthKey = getMonthKey();
-    let rawData: object | null = null;
-    let htmlContent: string | null = null;
 
-    if (isExcel) {
-      const rows = parseExcelBuffer(await file.arrayBuffer());
-      const row = rows.find((r) => r.branch === branch) ?? rows[0];
-      rawData = { ...row, branch };
-    } else {
-      htmlContent = await file.text();
-      // Note: HTML files >1MB should be moved to S3/R2. Limiting to 1MB here.
-      if (htmlContent.length > 1 * 1024 * 1024) {
-        return NextResponse.json({ error: "HTML file too large. Maximum 1MB for dashboard files." }, { status: 413 });
-      }
-      rawData = { ...parseHtmlContent(htmlContent), branch };
-    }
-
-    const existing = await prisma.upload.findFirst({
-      where: { uploadedBy: user.id, branch, dateKey },
+    const upload = await prisma.upload.create({
+      data: {
+        branch,
+        fileType: isExcel ? "EXCEL" : "HTML",
+        fileName: file.name,
+        rawData: parsedData as unknown as Prisma.InputJsonValue,
+        htmlContent: htmlContent,
+        uploadedBy: user.id,
+        dateKey,
+        monthKey,
+      },
     });
 
-    let uploadRecord;
-    if (existing) {
-      uploadRecord = await prisma.upload.update({
-        where: { id: existing.id },
-        data: { fileType: isExcel ? "EXCEL" : "HTML", fileName: file.name, rawData, htmlContent },
-      });
-    } else {
-      uploadRecord = await prisma.upload.create({
-        data: { branch, fileType: isExcel ? "EXCEL" : "HTML", fileName: file.name, rawData, htmlContent, uploadedBy: user.id, dateKey, monthKey }
-      });
-    }
+    // Fire events and build snapshot in background to avoid blocking response
+    Promise.all([
+      buildDailySnapshot(dateKey).catch(console.error),
+      pusherServer.trigger(PUSHER_CHANNELS.PRIVATE_UPLOADS, PUSHER_EVENTS.UPLOAD_COMPLETE, {
+        branch,
+        dateKey,
+        uploadedBy: user.name
+      }),
+      pusherServer.trigger(PUSHER_CHANNELS.PRIVATE_DASHBOARD, PUSHER_EVENTS.DASHBOARD_UPDATED, {
+        dateKey
+      })
+    ]).catch(console.error);
 
-    try {
-      await buildDailySnapshot(dateKey);
-      await pusherServer.trigger(PUSHER_CHANNELS.UPLOADS, PUSHER_EVENTS.UPLOAD_COMPLETE, { branch, dateKey });
-      await pusherServer.trigger(PUSHER_CHANNELS.DASHBOARD, PUSHER_EVENTS.DASHBOARD_UPDATED, { dateKey });
-    } catch (snapErr) {
-      console.error("Snapshot generation failed:", snapErr);
-    }
-
-    return successResponse({ uploaded: true, branch, dateKey, upload: uploadRecord }, HTTP_STATUS.CREATED);
-  } catch { return errorResponse("Upload failed"); }
+    return successResponse({ success: true, message: "File uploaded successfully" });
+  } catch (error) {
+    console.error("Upload error:", error);
+    return errorResponse("Internal server error", 500);
+  }
 }

@@ -1,45 +1,36 @@
-import type { NextAuthOptions } from "next-auth";
+import { AuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import { prisma } from "./prisma";
-import { LoginSchema } from "./validations";
-import type { SessionUser } from "@/types";
 
-export const authOptions: NextAuthOptions = {
-  session: { strategy: "jwt" },
-  pages: { signIn: "/login", signOut: "/login", error: "/login" },
+export const authOptions: AuthOptions = {
   providers: [
     CredentialsProvider({
-      name: "credentials",
+      name: "Credentials",
       credentials: {
         email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
-        const parsed = LoginSchema.safeParse(credentials);
-        if (!parsed.success) return null;
-
+        if (!credentials?.email || !credentials?.password) {
+          throw new Error("Missing email or password");
+        }
         const user = await prisma.user.findUnique({
-          where: { email: parsed.data.email },
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            password: true,
-            role: true,
-            branches: true,
-            isActive: true,
-            passwordSet: true,
-          },
+          where: { email: credentials.email },
         });
-
-        if (!user) return null;
-        if (!user.isActive) return null;
-        if (!user.passwordSet) return null;
-
-        const valid = await bcrypt.compare(parsed.data.password, user.password);
-        if (!valid) return null;
-
+        if (!user) {
+          throw new Error("User not found");
+        }
+        if (!user.isActive) {
+          throw new Error("Account is pending approval");
+        }
+        if (!user.passwordSet) {
+          throw new Error("Password not set");
+        }
+        const isValid = await bcrypt.compare(credentials.password, user.password);
+        if (!isValid) {
+          throw new Error("Invalid password");
+        }
         return {
           id: user.id,
           name: user.name,
@@ -50,22 +41,33 @@ export const authOptions: NextAuthOptions = {
       },
     }),
   ],
+  session: {
+    strategy: "jwt",
+  },
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
-        token.id = (user as SessionUser & { id: string }).id;
-        token.role = (user as SessionUser).role;
-        token.branches = (user as SessionUser).branches;
+        token.id = user.id;
+        token.role = user.role;
+        token.branches = user.branches;
       }
       return token;
     },
     async session({ session, token }) {
-      if (session.user) {
-        (session.user as SessionUser).id = token.id as string;
-        (session.user as SessionUser).role = token.role as SessionUser["role"];
-        (session.user as SessionUser).branches = token.branches as string[];
+      if (token) {
+        session.user = {
+          ...session.user,
+          id: token.id as string,
+          role: token.role as "ADMIN" | "EMPLOYEE" | "MANAGEMENT",
+          branches: token.branches as string[],
+        };
       }
       return session;
     },
+  },
+  pages: {
+    signIn: "/login",
+    signOut: "/login",
+    error: "/login",
   },
 };

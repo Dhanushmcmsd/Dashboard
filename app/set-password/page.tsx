@@ -1,114 +1,125 @@
 "use client";
 
-import { useState } from "react";
-import type { FormEvent } from "react";
+import { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { Loader2 } from "lucide-react";
 import Link from "next/link";
 
-export default function SetPasswordPage() {
+function SetPasswordForm() {
   const router = useRouter();
-  const params = useSearchParams();
-  const token = params.get("token") ?? "";
+  const searchParams = useSearchParams();
+  const token = searchParams.get("token");
 
   const [password, setPassword] = useState("");
-  const [confirm, setConfirm] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
   if (!token) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background px-4">
-        <div className="bg-surface border border-danger/30 rounded-2xl p-8 max-w-sm text-center">
-          <span className="text-4xl mb-3 block">×</span>
-          <h2 className="text-xl font-bold text-text-main mb-2">Invalid link</h2>
-          <p className="text-text-muted text-sm mb-4">This link is missing a token. Please ask your admin for a new setup link.</p>
-          <Link href="/login" className="text-primary hover:underline text-sm">Back to login</Link>
-        </div>
+      <div className="text-center">
+        <h2 className="text-xl font-bold text-white mb-2">Invalid Link</h2>
+        <p className="text-text-muted mb-6">This setup link is invalid or missing the token parameter.</p>
+        <Link href="/login" className="text-primary hover:underline">Return to login</Link>
       </div>
     );
   }
 
-  async function handleSubmit(e: FormEvent<HTMLFormElement>) {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-    if (password.length < 8) {
-      setError("Password must be at least 8 characters.");
+
+    if (password !== confirmPassword) {
+      setError("Passwords do not match");
       return;
     }
-    if (password !== confirm) {
-      setError("Passwords do not match.");
+
+    if (password.length < 6) {
+      setError("Password must be at least 6 characters");
       return;
     }
 
     setLoading(true);
-    const res = await fetch("/api/auth/set-password", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ token, password }),
-    });
-    const data = await res.json() as { success: boolean; error?: string };
-    setLoading(false);
 
-    if (!data.success) {
-      setError(data.error ?? "Failed to set password. The link may have expired.");
-      return;
+    try {
+      const res = await fetch("/api/auth/set-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token, password }),
+      });
+
+      const data = await res.json();
+
+      if (!data.success) {
+        setError(data.error || "Failed to set password");
+      } else {
+        router.push("/login?msg=password-set");
+      }
+    } catch (err) {
+      setError("An unexpected error occurred.");
+    } finally {
+      setLoading(false);
     }
-    router.push("/login?msg=password-set");
-  }
+  };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background px-4">
-      <div className="w-full max-w-sm">
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-success/10 border border-success/30 mb-4">
-            <span className="text-2xl">🔐</span>
-          </div>
-          <h1 className="text-2xl font-bold text-text-main">Create your password</h1>
-          <p className="text-text-muted text-sm mt-1">Your account has been approved. Set a password to get started.</p>
+    <form onSubmit={handleSubmit} className="space-y-5">
+      {error && (
+        <div className="p-4 bg-danger/10 border border-danger/20 text-danger rounded-lg text-sm text-center">
+          {error}
         </div>
+      )}
 
-        <div className="bg-surface border border-border rounded-2xl p-8 shadow-2xl shadow-black/30">
-          {error && (
-            <div className="mb-4 p-3 bg-danger/10 border border-danger/30 rounded-lg text-danger text-sm">
-              {error}
-            </div>
-          )}
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="block text-xs font-medium text-text-muted uppercase tracking-wider mb-1.5">
-                New password
-              </label>
-              <input
-                type="password"
-                required
-                minLength={8}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full bg-background border border-border rounded-lg px-3 py-2.5 text-text-main text-sm focus:outline-none focus:border-primary transition"
-                placeholder="Minimum 8 characters"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-text-muted uppercase tracking-wider mb-1.5">
-                Confirm password
-              </label>
-              <input
-                type="password"
-                required
-                value={confirm}
-                onChange={(e) => setConfirm(e.target.value)}
-                className="w-full bg-background border border-border rounded-lg px-3 py-2.5 text-text-main text-sm focus:outline-none focus:border-primary transition"
-                placeholder="Repeat password"
-              />
-            </div>
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-success hover:bg-success/90 text-white font-semibold py-2.5 rounded-lg transition disabled:opacity-50 mt-2"
-            >
-              {loading ? "Setting password..." : "Set password and continue"}
-            </button>
-          </form>
+      <div>
+        <label className="block text-sm font-medium text-text-muted mb-1.5">New Password</label>
+        <input
+          type="password"
+          required
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          className="w-full bg-elevated border border-border rounded-lg px-4 py-2.5 text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+          placeholder="••••••••"
+        />
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-text-muted mb-1.5">Confirm Password</label>
+        <input
+          type="password"
+          required
+          value={confirmPassword}
+          onChange={(e) => setConfirmPassword(e.target.value)}
+          className="w-full bg-elevated border border-border rounded-lg px-4 py-2.5 text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+          placeholder="••••••••"
+        />
+      </div>
+
+      <button
+        type="submit"
+        disabled={loading}
+        className="w-full bg-primary hover:bg-primary/90 text-white font-medium py-2.5 rounded-lg transition-colors flex items-center justify-center disabled:opacity-70"
+      >
+        {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : "Set Password"}
+      </button>
+    </form>
+  );
+}
+
+export default function SetPasswordPage() {
+  return (
+    <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden bg-[#0A0A0C]">
+      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-primary/20 blur-[120px] rounded-full pointer-events-none" />
+
+      <div className="w-full max-w-md relative z-10">
+        <div className="bg-surface/80 backdrop-blur-xl border border-border p-8 rounded-2xl shadow-2xl">
+          <div className="text-center mb-8">
+            <h1 className="text-3xl font-bold text-white mb-2">Complete Setup</h1>
+            <p className="text-text-muted">Set a password for your account.</p>
+          </div>
+
+          <Suspense fallback={<div className="flex justify-center"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>}>
+            <SetPasswordForm />
+          </Suspense>
         </div>
       </div>
     </div>

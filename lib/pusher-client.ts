@@ -1,9 +1,13 @@
 import PusherClient from "pusher-js";
 
-let client: PusherClient | null = null;
-export function getPusherClient(): PusherClient {
-  if (!client) {
-    client = new PusherClient(process.env.NEXT_PUBLIC_PUSHER_KEY || "", { cluster: process.env.NEXT_PUBLIC_PUSHER_CLUSTER || "ap2", authEndpoint: "/api/pusher/auth" });
+let pusherClientInstance: PusherClient | null = null;
+
+export const getPusherClient = () => {
+  if (!pusherClientInstance) {
+    pusherClientInstance = new PusherClient(process.env.NEXT_PUBLIC_PUSHER_APP_KEY!, {
+      cluster: process.env.NEXT_PUBLIC_PUSHER_CLUSTER!,
+      authEndpoint: "/api/pusher/auth",
+    });
   }
-  return client;
-}
+  return pusherClientInstance;
+};

@@ -1,21 +1,23 @@
 "use client";
 
-import { useEffect } from "react";
 import { useSession } from "next-auth/react";
-import { usePathname, useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
+import { LogOut, Loader2, Calendar, CalendarDays, Bell } from "lucide-react";
+import { cn } from "@/lib/utils";
 import AlertToast from "@/components/shared/AlertToast";
-import type { SessionUser } from "@/types";
+import { BRANCHES } from "@/types";
+import { signOut } from "next-auth/react";
 
-const TABS = [
-  { label: "Supermarket", icon: "🛒", href: "/management/supermarket" },
-  { label: "Gold Loan", icon: "🥇", href: "/management/gold-loan" },
-  { label: "ML Loan", icon: "📊", href: "/management/ml-loan" },
-  { label: "Vehicle Loan", icon: "🚗", href: "/management/vehicle-loan" },
-  { label: "Personal Loan", icon: "👤", href: "/management/personal-loan" },
-  { label: "Daily", icon: "📅", href: "/management/daily" },
-  { label: "Monthly", icon: "📆", href: "/management/monthly" },
-  { label: "Alerts", icon: "🔔", href: "/management/alerts" },
+const navItems = [
+  { name: "Supermarket", icon: "🛒", path: "/management/supermarket" },
+  { name: "Gold Loan", icon: "🥇", path: "/management/gold-loan" },
+  { name: "ML Loan", icon: "📊", path: "/management/ml-loan" },
+  { name: "Vehicle Loan", icon: "🚗", path: "/management/vehicle-loan" },
+  { name: "Personal Loan", icon: "👤", path: "/management/personal-loan" },
+  { name: "Daily", icon: <Calendar className="w-4 h-4" />, path: "/management/daily" },
+  { name: "Monthly", icon: <CalendarDays className="w-4 h-4" />, path: "/management/monthly" },
+  { name: "Alerts", icon: <Bell className="w-4 h-4" />, path: "/management/alerts" },
 ];
 
 export default function ManagementLayout({ children }: { children: React.ReactNode }) {
@@ -23,65 +25,73 @@ export default function ManagementLayout({ children }: { children: React.ReactNo
   const router = useRouter();
   const pathname = usePathname();
 
-  useEffect(() => {
-    if (status === "loading") return;
-    if (!session || (session.user as SessionUser).role !== "MANAGEMENT") {
-      router.replace("/login");
-    }
-  }, [session, status, router]);
-
   if (status === "loading") {
-    return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: "#0A0A0C" }}>
-        <div className="text-sm animate-pulse" style={{ color: "#64748B" }}>Loading...</div>
-      </div>
-    );
+    return <div className="min-h-screen flex items-center justify-center bg-[#0A0A0C]"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
+  }
+
+  if (status === "unauthenticated" || session?.user?.role !== "MANAGEMENT") {
+    router.push("/login");
+    return null;
   }
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: "#0A0A0C" }}>
-      <AlertToast />
-      <header
-        className="flex items-center px-6 gap-4 shrink-0 sticky top-0 z-30"
-        style={{ background: "#0D0D12", borderBottom: "1px solid rgba(255,255,255,0.04)", height: "52px" }}
-      >
-        <div className="flex items-center gap-2.5">
-          <div className="w-7 h-7 rounded-md flex items-center justify-center text-xs font-bold text-white" style={{ background: "#DC2626" }}>
-            BS
-          </div>
-          <span className="font-semibold text-sm" style={{ color: "#E2E8F0" }}>BranchSync</span>
-        </div>
-        <div className="ml-auto flex items-center gap-3">
+    <div className="min-h-screen flex flex-col bg-[#0A0A0C]">
+      {/* Top Header */}
+      <header className="bg-surface border-b border-border sticky top-0 z-40">
+        <div className="max-w-7xl mx-auto px-4 md:px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold" style={{ background: "rgba(22,163,74,0.15)", color: "#4ADE80" }}>
-              {(session?.user?.name ?? "M")[0].toUpperCase()}
-            </div>
-            <span className="text-sm hidden sm:block" style={{ color: "#64748B" }}>{session?.user?.name}</span>
+            <h1 className="text-xl font-bold text-white tracking-tight">Branch<span className="text-primary">Sync</span></h1>
           </div>
-          <Link href="/api/auth/signout" className="text-xs px-2 py-1 rounded-lg transition-colors" style={{ color: "#64748B" }}>
-            Sign out
-          </Link>
+          
+          <div className="flex items-center gap-4">
+            <div className="hidden md:block text-right">
+              <p className="text-sm font-medium text-text-primary">{session.user.name}</p>
+              <p className="text-xs text-text-muted">Management</p>
+            </div>
+            <div className="w-px h-8 bg-border hidden md:block"></div>
+            <button 
+              onClick={() => signOut({ callbackUrl: "/login" })}
+              className="p-2 text-text-muted hover:text-white hover:bg-elevated rounded-lg transition-colors"
+              title="Sign Out"
+            >
+              <LogOut className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+
+        {/* Tab Bar */}
+        <div className="max-w-7xl mx-auto px-4 md:px-6 overflow-x-auto hide-scrollbar border-t border-border/50">
+          <nav className="flex space-x-1 py-2">
+            {navItems.map((item) => {
+              const isActive = pathname === item.path;
+              return (
+                <Link
+                  key={item.name}
+                  href={item.path}
+                  className={cn(
+                    "flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all whitespace-nowrap",
+                    isActive
+                      ? "bg-primary/10 text-primary"
+                      : "text-text-muted hover:text-text-primary hover:bg-elevated"
+                  )}
+                >
+                  <span className="flex items-center justify-center">{item.icon}</span>
+                  {item.name}
+                </Link>
+              );
+            })}
+          </nav>
         </div>
       </header>
-      <nav className="overflow-x-auto shrink-0 sticky z-20" style={{ background: "#0D0D12", borderBottom: "1px solid rgba(255,255,255,0.04)", top: "52px" }}>
-        <div className="flex px-4 min-w-max">
-          {TABS.map((tab) => {
-            const isActive = pathname === tab.href || pathname.startsWith(`${tab.href}/`);
-            return (
-              <Link
-                key={tab.href}
-                href={tab.href}
-                className="flex items-center gap-1.5 px-4 py-3 text-sm whitespace-nowrap border-b-2 transition-all font-medium"
-                style={isActive ? { borderColor: "#DC2626", color: "#E2E8F0" } : { borderColor: "transparent", color: "#64748B" }}
-              >
-                <span>{tab.icon}</span>
-                {tab.label}
-              </Link>
-            );
-          })}
+
+      {/* Main Content */}
+      <main className="flex-1 p-4 md:p-6 lg:p-8">
+        <div className="max-w-7xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500">
+          {children}
         </div>
-      </nav>
-      <main className="flex-1 p-6 overflow-y-auto">{children}</main>
+      </main>
+
+      <AlertToast />
     </div>
   );
 }

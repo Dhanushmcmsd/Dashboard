@@ -1,189 +1,112 @@
 "use client";
 
 import { useState } from "react";
-import type { FormEvent } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { Loader2 } from "lucide-react";
 
 export default function LoginPage() {
   const router = useRouter();
-  const params = useSearchParams();
-  const successMsg = params.get("msg") === "password-set"
-    ? "Password set successfully. You can now log in."
-    : "";
+  const searchParams = useSearchParams();
+  const msg = searchParams.get("msg");
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  async function handleSubmit(e: FormEvent<HTMLFormElement>) {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
     setError("");
+    setLoading(true);
 
-    const res = await signIn("credentials", { email, password, redirect: false });
+    try {
+      // Pre-check email status
+      const res = await fetch(`/api/auth/check-email?email=${encodeURIComponent(email)}`);
+      const data = await res.json();
 
-    if (res?.error) {
-      try {
-        const check = await fetch(`/api/auth/check-email?email=${encodeURIComponent(email)}`);
-        const info = await check.json() as { exists: boolean; isActive: boolean; passwordSet: boolean };
-
-        if (!info.exists) {
-          setError("No account found with this email.");
-        } else if (!info.isActive) {
-          setError("Your account is pending admin approval. Please wait.");
-        } else if (!info.passwordSet) {
-          setError("Please set your password first. Contact your admin for the setup link.");
-        } else {
-          setError("Invalid email or password.");
-        }
-      } catch {
-        setError("Invalid email or password.");
+      if (!data.success || !data.data.exists) {
+        setError("Account not found. Please sign up first.");
+        setLoading(false);
+        return;
       }
-      setLoading(false);
-      return;
-    }
 
-    router.push("/auth/redirect");
-  }
+      if (!data.data.isActive) {
+        setError("Your account is pending admin approval.");
+        setLoading(false);
+        return;
+      }
+
+      if (!data.data.passwordSet) {
+        setError("Password not set. Please check your email for the setup link.");
+        setLoading(false);
+        return;
+      }
+
+      const result = await signIn("credentials", {
+        redirect: false,
+        email,
+        password,
+      });
+
+      if (result?.error) {
+        setError(result.error);
+      } else {
+        router.push("/auth/redirect");
+      }
+    } catch (err) {
+      setError("An unexpected error occurred.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
-    <div
-      className="min-h-screen flex items-center justify-center px-4"
-      style={{ background: "#0A0A0C" }}
-    >
-      {/* Subtle background texture */}
-      <div
-        className="absolute inset-0 pointer-events-none"
-        style={{
-          backgroundImage: "radial-gradient(ellipse at 20% 50%, rgba(37,99,235,0.04) 0%, transparent 60%), radial-gradient(ellipse at 80% 20%, rgba(220,38,38,0.04) 0%, transparent 60%)",
-        }}
-      />
+    <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden bg-[#0A0A0C]">
+      {/* Background glow */}
+      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-primary/20 blur-[120px] rounded-full pointer-events-none" />
 
-      <div className="w-full max-w-sm relative z-10">
-        {/* Logo / Branding */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center gap-3 mb-6">
-            <div
-              className="w-9 h-9 rounded-lg flex items-center justify-center font-bold text-sm text-white"
-              style={{ background: "#DC2626" }}
-            >
-              BS
-            </div>
-            <span className="text-2xl font-bold tracking-tight" style={{ color: "#E2E8F0" }}>
-              BranchSync
-            </span>
+      <div className="w-full max-w-md relative z-10">
+        <div className="bg-surface/80 backdrop-blur-xl border border-border p-8 rounded-2xl shadow-2xl">
+          <div className="text-center mb-8">
+            <h1 className="text-3xl font-bold text-white mb-2">BranchSync</h1>
+            <p className="text-text-muted">Welcome back. Please log in.</p>
           </div>
-          <p className="text-sm" style={{ color: "#64748B" }}>
-            Supra Pacific Financial Services
-          </p>
-        </div>
 
-        {/* Card */}
-        <div
-          className="relative overflow-hidden rounded-2xl p-8"
-          style={{
-            background: "#111116",
-            border: "1px solid rgba(255,255,255,0.06)",
-            boxShadow: "0 4px 24px rgba(0,0,0,0.4), 0 0 0 1px rgba(220,38,38,0.08)",
-          }}
-        >
-          {/* Top highlight */}
-          <div
-            className="absolute top-0 left-0 right-0 h-px"
-            style={{ background: "linear-gradient(90deg, transparent, rgba(220,38,38,0.4), transparent)" }}
-          />
-
-          {successMsg && (
-            <div
-              className="mb-5 p-3 rounded-lg text-sm flex items-center gap-2"
-              style={{
-                background: "rgba(22,163,74,0.1)",
-                border: "1px solid rgba(22,163,74,0.25)",
-                color: "#4ADE80",
-              }}
-            >
-              <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
-              {successMsg}
+          {msg === "password-set" && (
+            <div className="mb-6 p-4 bg-success/10 border border-success/20 text-success rounded-lg text-sm text-center">
+              Password set successfully! You can now log in.
             </div>
           )}
 
           {error && (
-            <div
-              className="mb-5 p-3 rounded-lg text-sm"
-              style={{
-                background: "rgba(220,38,38,0.08)",
-                border: "1px solid rgba(220,38,38,0.25)",
-                color: "#F87171",
-              }}
-            >
+            <div className="mb-6 p-4 bg-danger/10 border border-danger/20 text-danger rounded-lg text-sm text-center">
               {error}
             </div>
           )}
 
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <label
-                className="block text-xs font-medium uppercase tracking-widest mb-2"
-                style={{ color: "#64748B" }}
-              >
-                Email address
-              </label>
+              <label className="block text-sm font-medium text-text-muted mb-1.5">Email address</label>
               <input
                 type="email"
                 required
-                autoComplete="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full rounded-lg px-3.5 py-2.5 text-sm outline-none transition-all"
-                style={{
-                  background: "#0F0F14",
-                  border: "1px solid rgba(255,255,255,0.08)",
-                  color: "#E2E8F0",
-                }}
-                onFocus={(e) => {
-                  e.target.style.borderColor = "#2563EB";
-                  e.target.style.boxShadow = "0 0 0 2px rgba(37,99,235,0.12)";
-                }}
-                onBlur={(e) => {
-                  e.target.style.borderColor = "rgba(255,255,255,0.08)";
-                  e.target.style.boxShadow = "none";
-                }}
+                className="w-full bg-elevated border border-border rounded-lg px-4 py-2.5 text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
                 placeholder="you@company.com"
               />
             </div>
 
             <div>
-              <label
-                className="block text-xs font-medium uppercase tracking-widest mb-2"
-                style={{ color: "#64748B" }}
-              >
-                Password
-              </label>
+              <label className="block text-sm font-medium text-text-muted mb-1.5">Password</label>
               <input
                 type="password"
                 required
-                autoComplete="current-password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full rounded-lg px-3.5 py-2.5 text-sm outline-none transition-all"
-                style={{
-                  background: "#0F0F14",
-                  border: "1px solid rgba(255,255,255,0.08)",
-                  color: "#E2E8F0",
-                }}
-                onFocus={(e) => {
-                  e.target.style.borderColor = "#2563EB";
-                  e.target.style.boxShadow = "0 0 0 2px rgba(37,99,235,0.12)";
-                }}
-                onBlur={(e) => {
-                  e.target.style.borderColor = "rgba(255,255,255,0.08)";
-                  e.target.style.boxShadow = "none";
-                }}
+                className="w-full bg-elevated border border-border rounded-lg px-4 py-2.5 text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
                 placeholder="••••••••"
               />
             </div>
@@ -191,27 +114,19 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-2.5 rounded-lg font-semibold text-sm text-white transition-all mt-2 flex items-center justify-center gap-2 disabled:opacity-50"
-              style={{ background: "#2563EB" }}
-              onMouseEnter={(e) => !loading && ((e.target as HTMLButtonElement).style.background = "#3B82F6")}
-              onMouseLeave={(e) => !loading && ((e.target as HTMLButtonElement).style.background = "#2563EB")}
+              className="w-full bg-primary hover:bg-primary/90 text-white font-medium py-2.5 rounded-lg transition-colors flex items-center justify-center disabled:opacity-70"
             >
-              {loading ? (
-                <>
-                  <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  Signing in...
-                </>
-              ) : "Sign in"}
+              {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : "Sign in"}
             </button>
           </form>
-        </div>
 
-        <p className="text-center text-sm mt-5" style={{ color: "#64748B" }}>
-          No account?{" "}
-          <Link href="/signup" className="font-medium transition-colors" style={{ color: "#2563EB" }}>
-            Request access
-          </Link>
-        </p>
+          <p className="mt-6 text-center text-sm text-text-muted">
+            Don't have an account?{" "}
+            <Link href="/signup" className="text-primary hover:text-primary/80 font-medium transition-colors">
+              Sign up
+            </Link>
+          </p>
+        </div>
       </div>
     </div>
   );

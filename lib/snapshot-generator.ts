@@ -1,80 +1,179 @@
 import { prisma } from "./prisma";
-import { BRANCHES } from "./constants";
+import { BRANCHES, BranchName, DailyDashboardData, MonthlyDashboardData, BranchDailyMetric, BranchMonthlyMetric, ParsedRow, DpdBucketData } from "@/types";
 import { getPrevMonthKey, calcGrowth } from "./utils";
-import type { BranchName, ParsedRow, BranchDailyMetric, DailyDashboardData, BranchMonthlyMetric, MonthlyDashboardData } from "@/types";
+import { Prisma } from "@prisma/client";
 
 export async function buildDailySnapshot(dateKey: string): Promise<DailyDashboardData> {
-  const existingLock = await prisma.dailySnapshot.findUnique({ where: { dateKey } });
-  if (existingLock?.isBuilding) {
-    await new Promise(r => setTimeout(r, 2000));
-    return (await prisma.dailySnapshot.findUnique({ where: { dateKey } })).combinedData as DailyDashboardData;
-  }
-  await prisma.dailySnapshot.upsert({
-    where: { dateKey },
-    update: { isBuilding: true },
-    create: { dateKey, combinedData: {}, missingBranches: [], isBuilding: true },
-  });
-
+  let lockAcquired = false;
   try {
-    const uploads = await prisma.upload.findMany({ where: { dateKey }, include: { user: { select: { name: true } } }, orderBy: { uploadedAt: "desc" } });
-    const byBranch = new Map<string, (typeof uploads)[number]>();
-    for (const u of uploads) if (!byBranch.has(u.branch)) byBranch.set(u.branch, u);
+    const existing = await prisma.dailySnapshot.findUnique({ where: { dateKey } });
+    if (existing?.isBuilding) {
+      throw new Error("Snapshot is already being built");
+    }
+
+    await prisma.dailySnapshot.upsert({
+      where: { dateKey },
+      create: { dateKey, combinedData: {}, missingBranches: [], isBuilding: true },
+      update: { isBuilding: true },
+    });
+    lockAcquired = true;
+
+    const uploads = await prisma.upload.findMany({
+      where: { dateKey },
+      orderBy: { uploadedAt: "desc" },
+      include: { user: true },
+    });
+
+    const latestUploadsByBranch = new Map<string, typeof uploads[0]>();
+    for (const upload of uploads) {
+      if (!latestUploadsByBranch.has(upload.branch)) {
+        latestUploadsByBranch.set(upload.branch, upload);
+      }
+    }
+
     const uploadedBranches: BranchName[] = [];
     const missingBranches: BranchName[] = [];
     const branches: BranchDailyMetric[] = [];
-    for (const b of BRANCHES) {
-      const u = byBranch.get(b);
-      if (!u || !u.rawData) { missingBranches.push(b); continue; }
-      uploadedBranches.push(b);
-      const raw = u.rawData as unknown as ParsedRow;
-      branches.push({ ...raw, branch: b, uploadedBy: u.user.name, uploadedAt: u.uploadedAt.toISOString(), fileName: u.fileName });
+    let closingBalance = 0;
+    let disbursement = 0;
+    let collection = 0;
+    let npa = 0;
+
+    for (const branch of BRANCHES) {
+      const upload = latestUploadsByBranch.get(branch);
+      if (upload && upload.rawData) {
+        uploadedBranches.push(branch);
+        const parsed = upload.rawData as unknown as ParsedRow;
+        
+        closingBalance += parsed.closingBalance || 0;
+        disbursement += parsed.disbursement || 0;
+        collection += parsed.collection || 0;
+        npa += parsed.npa || 0;
+
+        branches.push({
+          ...parsed,
+          uploadedBy: upload.user.name,
+          uploadedAt: upload.uploadedAt.toISOString(),
+          fileName: upload.fileName,
+        });
+      } else {
+        missingBranches.push(branch);
+      }
     }
-    const totals = branches.reduce((a, m) => ({ closingBalance: a.closingBalance + m.closingBalance, disbursement: a.disbursement + m.disbursement, collection: a.collection + m.collection, npa: a.npa + m.npa }), { closingBalance: 0, disbursement: 0, collection: 0, npa: 0 });
-    const data: DailyDashboardData = { dateKey, lastUpdated: new Date().toISOString(), uploadedBranches, missingBranches, branches, totals };
-    
-    await prisma.dailySnapshot.update({ where: { dateKey }, data: { combinedData: data as object, missingBranches, isBuilding: false } });
-    return data;
-  } catch (err) {
-    await prisma.dailySnapshot.update({ where: { dateKey }, data: { isBuilding: false } });
-    throw err;
+
+    const combinedData: DailyDashboardData = {
+      dateKey,
+      lastUpdated: new Date().toISOString(),
+      uploadedBranches,
+      missingBranches,
+      branches,
+      totals: { closingBalance, disbursement, collection, npa },
+    };
+
+    await prisma.dailySnapshot.update({
+      where: { dateKey },
+      data: {
+        combinedData: combinedData as unknown as Prisma.InputJsonValue,
+        missingBranches,
+        isBuilding: false,
+        generatedAt: new Date(),
+      },
+    });
+
+    return combinedData;
+  } catch (error) {
+    if (lockAcquired) {
+      await prisma.dailySnapshot.update({
+        where: { dateKey },
+        data: { isBuilding: false },
+      });
+    }
+    throw error;
   }
 }
 
 export async function buildMonthlySnapshot(monthKey: string): Promise<MonthlyDashboardData> {
-  const uploads = await prisma.upload.findMany({ where: { monthKey }, include: { user: { select: { name: true } } }, orderBy: { uploadedAt: "desc" } });
-  const byBranch = new Map<string, (typeof uploads)[number]>();
-  for (const u of uploads) if (!byBranch.has(u.branch)) byBranch.set(u.branch, u);
-  
+  const uploads = await prisma.upload.findMany({
+    where: { monthKey },
+    orderBy: { uploadedAt: "desc" },
+    include: { user: true },
+  });
+
+  const latestUploadsByBranch = new Map<string, typeof uploads[0]>();
+  for (const upload of uploads) {
+    if (!latestUploadsByBranch.has(upload.branch)) {
+      latestUploadsByBranch.set(upload.branch, upload);
+    }
+  }
+
   const prevMonthKey = getPrevMonthKey(monthKey);
-  const prevUploads = await prisma.upload.findMany({ where: { monthKey: prevMonthKey }, orderBy: { uploadedAt: "desc" } });
-  const prevByBranch = new Map<string, number>();
-  const seen = new Set<string>();
+  const prevSnapshot = await prisma.monthlySnapshot.findUnique({
+    where: { monthKey: prevMonthKey },
+  });
   
-  for (const p of prevUploads) if (!seen.has(p.branch) && p.rawData) { prevByBranch.set(p.branch, (p.rawData as unknown as ParsedRow).closingBalance); seen.add(p.branch); }
+  let prevData: MonthlyDashboardData | null = null;
+  if (prevSnapshot && prevSnapshot.combinedData) {
+    prevData = prevSnapshot.combinedData as unknown as MonthlyDashboardData;
+  }
 
   const branches: BranchMonthlyMetric[] = [];
-  for (const b of BRANCHES) {
-    const u = byBranch.get(b);
-    if (!u || !u.rawData) continue;
-    const raw = u.rawData as unknown as ParsedRow;
-    
-    let prevTotal = prevByBranch.get(b);
-    if (prevTotal === undefined) {
-      const prevSnapshot = await prisma.monthlySnapshot.findUnique({ where: { monthKey: prevMonthKey } });
-      if (prevSnapshot) {
-        const prevCombined = prevSnapshot.combinedData as unknown as MonthlyDashboardData;
-        const prevBranchData = prevCombined.branches.find(x => x.branch === b);
-        prevTotal = prevBranchData?.closingBalance ?? 0;
-      } else {
-        prevTotal = 0;
-      }
-    }
+  let closingBalance = 0;
+  let disbursement = 0;
+  let collection = 0;
+  let npa = 0;
 
-    const growth = calcGrowth(raw.closingBalance, prevTotal);
-    branches.push({ ...raw, branch: b, uploadedBy: u.user.name, uploadedAt: u.uploadedAt.toISOString(), fileName: u.fileName, growthPercent: growth, trend: growth === null ? "neutral" : growth > 0 ? "up" : growth < 0 ? "down" : "neutral" });
+  for (const branch of BRANCHES) {
+    const upload = latestUploadsByBranch.get(branch);
+    if (upload && upload.rawData) {
+      const parsed = upload.rawData as unknown as ParsedRow;
+      
+      closingBalance += parsed.closingBalance || 0;
+      disbursement += parsed.disbursement || 0;
+      collection += parsed.collection || 0;
+      npa += parsed.npa || 0;
+
+      let growthPercent: number | null = null;
+      let trend: "up" | "down" | "neutral" = "neutral";
+
+      if (prevData) {
+        const prevBranch = prevData.branches.find((b) => b.branch === branch);
+        if (prevBranch && prevBranch.closingBalance) {
+          growthPercent = calcGrowth(parsed.closingBalance || 0, prevBranch.closingBalance);
+          if (growthPercent !== null) {
+            trend = growthPercent > 0 ? "up" : growthPercent < 0 ? "down" : "neutral";
+          }
+        }
+      }
+
+      branches.push({
+        ...parsed,
+        uploadedBy: upload.user.name,
+        uploadedAt: upload.uploadedAt.toISOString(),
+        fileName: upload.fileName,
+        growthPercent,
+        trend,
+      });
+    }
   }
-  const totals = branches.reduce((a, m) => ({ closingBalance: a.closingBalance + m.closingBalance, disbursement: a.disbursement + m.disbursement, collection: a.collection + m.collection, npa: a.npa + m.npa }), { closingBalance: 0, disbursement: 0, collection: 0, npa: 0 });
-  const data: MonthlyDashboardData = { monthKey, lastUpdated: new Date().toISOString(), branches, totals };
-  await prisma.monthlySnapshot.upsert({ where: { monthKey }, update: { combinedData: data as object }, create: { monthKey, combinedData: data as object } });
-  return data;
+
+  const combinedData: MonthlyDashboardData = {
+    monthKey,
+    lastUpdated: new Date().toISOString(),
+    branches,
+    totals: { closingBalance, disbursement, collection, npa },
+  };
+
+  await prisma.monthlySnapshot.upsert({
+    where: { monthKey },
+    create: {
+      monthKey,
+      combinedData: combinedData as unknown as Prisma.InputJsonValue,
+    },
+    update: {
+      combinedData: combinedData as unknown as Prisma.InputJsonValue,
+      generatedAt: new Date(),
+    },
+  });
+
+  return combinedData;
 }
