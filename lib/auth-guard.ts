@@ -1,6 +1,7 @@
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "./auth";
 import { SessionUser } from "@/types";
+import { prisma } from "@/lib/prisma";
 
 type RequireAuthResult = 
   | { error: string; status: number; user?: never }
@@ -13,6 +14,9 @@ export async function requireAuth(allowedRoles?: string[]): Promise<RequireAuthR
   }
 
   const user = session.user as SessionUser;
+
+  const dbUser = await prisma.user.findUnique({ where: { id: user.id }, select: { isActive: true } });
+  if (!dbUser || !dbUser.isActive) return { error: "Account is deactivated", status: 401 };
 
   if (allowedRoles && !allowedRoles.includes(user.role)) {
     return { error: "Forbidden", status: 403 };

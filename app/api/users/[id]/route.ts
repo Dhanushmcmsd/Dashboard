@@ -12,6 +12,8 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
       return errorResponse(auth.error, auth.status);
     }
 
+    if (params.id === auth.user.id) return errorResponse("Cannot modify your own account", 403);
+
     const body = await req.json();
     const result = UpdateUserSchema.safeParse(body);
     if (!result.success) {
@@ -62,6 +64,8 @@ export async function DELETE(req: Request, { params }: { params: { id: string } 
     if (auth.error) {
       return errorResponse(auth.error, auth.status);
     }
+
+    if (params.id === auth.user.id) return errorResponse("Cannot deactivate your own account", 403);
 
     const user = await prisma.user.findUnique({
       where: { id: params.id },

@@ -1,3 +1,5 @@
+// WARNING: This in-memory rate limiter is NOT effective on serverless/Vercel deployments
+// because each cold start creates a fresh instance. Replace with Upstash Redis for production.
 import { LRUCache } from "lru-cache";
 
 type Options = {

@@ -93,87 +93,92 @@ export async function buildDailySnapshot(dateKey: string): Promise<DailyDashboar
 }
 
 export async function buildMonthlySnapshot(monthKey: string): Promise<MonthlyDashboardData> {
-  const uploads = await prisma.upload.findMany({
-    where: { monthKey },
-    orderBy: { uploadedAt: "desc" },
-    include: { user: true },
-  });
+  try {
+    const uploads = await prisma.upload.findMany({
+      where: { monthKey },
+      orderBy: { uploadedAt: "desc" },
+      include: { user: true },
+    });
 
-  const latestUploadsByBranch = new Map<string, typeof uploads[0]>();
-  for (const upload of uploads) {
-    if (!latestUploadsByBranch.has(upload.branch)) {
-      latestUploadsByBranch.set(upload.branch, upload);
+    const latestUploadsByBranch = new Map<string, typeof uploads[0]>();
+    for (const upload of uploads) {
+      if (!latestUploadsByBranch.has(upload.branch)) {
+        latestUploadsByBranch.set(upload.branch, upload);
+      }
     }
-  }
 
-  const prevMonthKey = getPrevMonthKey(monthKey);
-  const prevSnapshot = await prisma.monthlySnapshot.findUnique({
-    where: { monthKey: prevMonthKey },
-  });
-  
-  let prevData: MonthlyDashboardData | null = null;
-  if (prevSnapshot && prevSnapshot.combinedData) {
-    prevData = prevSnapshot.combinedData as unknown as MonthlyDashboardData;
-  }
+    const prevMonthKey = getPrevMonthKey(monthKey);
+    const prevSnapshot = await prisma.monthlySnapshot.findUnique({
+      where: { monthKey: prevMonthKey },
+    });
+    
+    let prevData: MonthlyDashboardData | null = null;
+    if (prevSnapshot && prevSnapshot.combinedData) {
+      prevData = prevSnapshot.combinedData as unknown as MonthlyDashboardData;
+    }
 
-  const branches: BranchMonthlyMetric[] = [];
-  let closingBalance = 0;
-  let disbursement = 0;
-  let collection = 0;
-  let npa = 0;
+    const branches: BranchMonthlyMetric[] = [];
+    let closingBalance = 0;
+    let disbursement = 0;
+    let collection = 0;
+    let npa = 0;
 
-  for (const branch of BRANCHES) {
-    const upload = latestUploadsByBranch.get(branch);
-    if (upload && upload.rawData) {
-      const parsed = upload.rawData as unknown as ParsedRow;
-      
-      closingBalance += parsed.closingBalance || 0;
-      disbursement += parsed.disbursement || 0;
-      collection += parsed.collection || 0;
-      npa += parsed.npa || 0;
+    for (const branch of BRANCHES) {
+      const upload = latestUploadsByBranch.get(branch);
+      if (upload && upload.rawData) {
+        const parsed = upload.rawData as unknown as ParsedRow;
+        
+        closingBalance += parsed.closingBalance || 0;
+        disbursement += parsed.disbursement || 0;
+        collection += parsed.collection || 0;
+        npa += parsed.npa || 0;
 
-      let growthPercent: number | null = null;
-      let trend: "up" | "down" | "neutral" = "neutral";
+        let growthPercent: number | null = null;
+        let trend: "up" | "down" | "neutral" = "neutral";
 
-      if (prevData) {
-        const prevBranch = prevData.branches.find((b) => b.branch === branch);
-        if (prevBranch && prevBranch.closingBalance) {
-          growthPercent = calcGrowth(parsed.closingBalance || 0, prevBranch.closingBalance);
-          if (growthPercent !== null) {
-            trend = growthPercent > 0 ? "up" : growthPercent < 0 ? "down" : "neutral";
+        if (prevData) {
+          const prevBranch = prevData.branches.find((b) => b.branch === branch);
+          if (prevBranch && prevBranch.closingBalance) {
+            growthPercent = calcGrowth(parsed.closingBalance || 0, prevBranch.closingBalance);
+            if (growthPercent !== null) {
+              trend = growthPercent > 0 ? "up" : growthPercent < 0 ? "down" : "neutral";
+            }
           }
         }
+
+        branches.push({
+          ...parsed,
+          uploadedBy: upload.user.name,
+          uploadedAt: upload.uploadedAt.toISOString(),
+          fileName: upload.fileName,
+          growthPercent,
+          trend,
+        });
       }
-
-      branches.push({
-        ...parsed,
-        uploadedBy: upload.user.name,
-        uploadedAt: upload.uploadedAt.toISOString(),
-        fileName: upload.fileName,
-        growthPercent,
-        trend,
-      });
     }
-  }
 
-  const combinedData: MonthlyDashboardData = {
-    monthKey,
-    lastUpdated: new Date().toISOString(),
-    branches,
-    totals: { closingBalance, disbursement, collection, npa },
-  };
-
-  await prisma.monthlySnapshot.upsert({
-    where: { monthKey },
-    create: {
+    const combinedData: MonthlyDashboardData = {
       monthKey,
-      combinedData: combinedData as unknown as Prisma.InputJsonValue,
-    },
-    update: {
-      combinedData: combinedData as unknown as Prisma.InputJsonValue,
-      generatedAt: new Date(),
-    },
-  });
+      lastUpdated: new Date().toISOString(),
+      branches,
+      totals: { closingBalance, disbursement, collection, npa },
+    };
 
-  return combinedData;
+    await prisma.monthlySnapshot.upsert({
+      where: { monthKey },
+      create: {
+        monthKey,
+        combinedData: combinedData as unknown as Prisma.InputJsonValue,
+      },
+      update: {
+        combinedData: combinedData as unknown as Prisma.InputJsonValue,
+        generatedAt: new Date(),
+      },
+    });
+
+    return combinedData;
+  } catch (err) {
+    console.error("[buildMonthlySnapshot] Failed:", err);
+    throw err;
+  }
 }

@@ -60,11 +60,9 @@ export async function POST(req: Request) {
     if (isExcel) {
       const rows = parseExcelBuffer(arrayBuffer);
       // We assume the employee uploads a file containing their branch
-      const branchRow = rows.find(r => r.branch.toLowerCase() === branch.toLowerCase());
-      if (!branchRow) {
-        return errorResponse("Could not find data for the selected branch in the file", 400);
-      }
-      parsedData = branchRow;
+      const row = rows.find((r) => r.branch === branch);
+      if (!row) return errorResponse("No matching branch data found in uploaded file", 400);
+      parsedData = row;
     } else {
       htmlContent = buffer.toString("utf-8");
       parsedData = parseHtmlContent(htmlContent);

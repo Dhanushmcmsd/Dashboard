@@ -23,7 +23,6 @@ export const UpdateUserSchema = z.object({
   role: z.enum(["ADMIN", "EMPLOYEE", "MANAGEMENT"]).optional(),
   branches: z.array(z.enum(["Supermarket", "Gold Loan", "ML Loan", "Vehicle Loan", "Personal Loan"])).optional(),
   isActive: z.boolean().optional(),
-  passwordSet: z.boolean().optional(),
 });
 
 export const ParsedRowSchema = z.object({
