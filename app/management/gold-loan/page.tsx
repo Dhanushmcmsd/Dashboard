@@ -1,2 +1,5 @@
-"use client";
-export default function Page() { return <div className="text-text-muted">gold-loan view</div>; }
+import BranchDetailView from "@/components/management/BranchDetailView";
+
+export default function Page() {
+  return <BranchDetailView branch="Gold Loan" />;
+}

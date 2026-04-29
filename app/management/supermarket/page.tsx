@@ -1,2 +1,5 @@
-"use client";
-export default function Page() { return <div className="text-text-muted">supermarket view</div>; }
+import BranchDetailView from "@/components/management/BranchDetailView";
+
+export default function Page() {
+  return <BranchDetailView branch="Supermarket" />;
+}

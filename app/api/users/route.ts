@@ -11,7 +11,7 @@ export async function GET(_req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user || (session.user as { role: string }).role !== "ADMIN") return errorResponse("Forbidden", HTTP_STATUS.FORBIDDEN);
-    const users = await prisma.user.findMany({ select: { id: true, name: true, email: true, role: true, branches: true, isActive: true, createdAt: true }, orderBy: { createdAt: "desc" } });
+    const users = await prisma.user.findMany({ select: { id: true, name: true, email: true, role: true, branches: true, isActive: true, createdAt: true, passwordSet: true }, orderBy: { createdAt: "desc" } });
     return successResponse(users);
   } catch { return errorResponse("Failed to list users"); }
 }
@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
     const exists = await prisma.user.findUnique({ where: { email } });
     if (exists) return errorResponse("Email already registered", HTTP_STATUS.BAD_REQUEST);
     const hashed = await bcrypt.hash(password, 12);
-    const user = await prisma.user.create({ data: { name, email, password: hashed, role, branches, isActive }, select: { id: true, name: true, email: true, role: true, branches: true, isActive: true, createdAt: true } });
+    const user = await prisma.user.create({ data: { name, email, password: hashed, role, branches, isActive, passwordSet: true }, select: { id: true, name: true, email: true, role: true, branches: true, isActive: true, createdAt: true, passwordSet: true } });
     return successResponse(user, HTTP_STATUS.CREATED);
   } catch { return errorResponse("Failed to create user"); }
 }

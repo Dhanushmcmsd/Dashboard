@@ -12,7 +12,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     if (!session?.user || (session.user as { role: string }).role !== "ADMIN") return errorResponse("Forbidden", HTTP_STATUS.FORBIDDEN);
     const parsed = UpdateUserSchema.safeParse(await req.json());
     if (!parsed.success) return validationError(parsed.error);
-    const user = await prisma.user.update({ where: { id: params.id }, data: parsed.data, select: { id: true, name: true, email: true, role: true, branches: true, isActive: true, createdAt: true } });
+    const user = await prisma.user.update({ where: { id: params.id }, data: parsed.data, select: { id: true, name: true, email: true, role: true, branches: true, isActive: true, createdAt: true, passwordSet: true } });
     return successResponse(user);
   } catch { return errorResponse("Failed to update user"); }
 }
