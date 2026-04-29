@@ -14,8 +14,8 @@ export async function GET(req: Request) {
     const { searchParams } = new URL(req.url);
     const branch = searchParams.get("branch");
 
-    const where: any = { uploadedBy: auth.user.id };
-    if (branch && auth.user.branches.includes(branch)) {
+    const where: any = { uploadedBy: auth.user!.id };
+    if (branch && auth.user!.branches.includes(branch)) {
       where.branch = branch;
     }
 

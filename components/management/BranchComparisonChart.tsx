@@ -37,8 +37,9 @@ export default function BranchComparisonChart({ branches }: Props) {
           />
           <Tooltip
             cursor={{ fill: "rgba(255,255,255,0.05)" }}
-            contentStyle={{ backgroundColor: "#18181F", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "8px", color: "#E2E8F0" }}
-            formatter={(value: number) => formatINRCompact(value)}
+            contentStyle={{ backgroundColor: "#18181F", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "8px" }}
+            formatter={(value: any) => formatINRCompact(value)}
+            labelStyle={{ color: "#E2E8F0", marginBottom: "4px" }}
           />
           <Legend wrapperStyle={{ paddingTop: "20px" }} />
           <Bar dataKey="Closing" fill="#3B82F6" radius={[2, 2, 0, 0]} />

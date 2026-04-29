@@ -19,7 +19,7 @@ export async function POST(req: Request) {
     }
 
     const authResponse = pusherServer.authorizeChannel(socketId, channelName, {
-      user_id: auth.user.id,
+      user_id: auth.user!.id,
     });
 
     return NextResponse.json(authResponse);

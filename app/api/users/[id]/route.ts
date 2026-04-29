@@ -5,14 +5,15 @@ import { successResponse, errorResponse, validationError } from "@/lib/api-utils
 import { UpdateUserSchema } from "@/lib/validations";
 import { sendDeactivationEmail, sendReactivationEmail } from "@/lib/email";
 
-export async function PATCH(req: Request, { params }: { params: { id: string } }) {
+export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const auth = await requireAuth(["ADMIN"]);
     if (auth.error) {
       return errorResponse(auth.error, auth.status);
     }
 
-    if (params.id === auth.user.id) return errorResponse("Cannot modify your own account", 403);
+    const resolvedParams = await params;
+    if (resolvedParams.id === auth.user!.id) return errorResponse("Cannot modify your own account", 403);
 
     const body = await req.json();
     const result = UpdateUserSchema.safeParse(body);
@@ -21,7 +22,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     }
 
     const existingUser = await prisma.user.findUnique({
-      where: { id: params.id },
+      where: { id: resolvedParams.id },
     });
 
     if (!existingUser) {
@@ -29,7 +30,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     }
 
     const user = await prisma.user.update({
-      where: { id: params.id },
+      where: { id: resolvedParams.id },
       data: result.data,
       select: {
         id: true,
@@ -58,17 +59,18 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   }
 }
 
-export async function DELETE(req: Request, { params }: { params: { id: string } }) {
+export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const auth = await requireAuth(["ADMIN"]);
     if (auth.error) {
       return errorResponse(auth.error, auth.status);
     }
 
-    if (params.id === auth.user.id) return errorResponse("Cannot deactivate your own account", 403);
+    const resolvedParams = await params;
+    if (resolvedParams.id === auth.user!.id) return errorResponse("Cannot deactivate your own account", 403);
 
     const user = await prisma.user.findUnique({
-      where: { id: params.id },
+      where: { id: resolvedParams.id },
     });
 
     if (!user) {
@@ -77,7 +79,7 @@ export async function DELETE(req: Request, { params }: { params: { id: string } 
 
     // Soft delete
     await prisma.user.update({
-      where: { id: params.id },
+      where: { id: resolvedParams.id },
       data: { isActive: false },
     });
 

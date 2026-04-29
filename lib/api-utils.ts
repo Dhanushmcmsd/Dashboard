@@ -9,7 +9,7 @@ export function errorResponse(message: string, status = 400) {
   return NextResponse.json({ success: false, error: message }, { status });
 }
 
-export function validationError(error: z.ZodError) {
-  const message = error.errors.map((e) => `${e.path.join(".")}: ${e.message}`).join(", ");
+export function validationError(error: z.ZodError<any>) {
+  const message = error.issues.map((e: any) => `${e.path.join(".")}: ${e.message}`).join(", ");
   return errorResponse(message, 400);
 }

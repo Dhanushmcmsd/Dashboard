@@ -41,6 +41,7 @@
     "geist": "^1.7.0",
     "jsonwebtoken": "^9.0.3",
     "lru-cache": "^10.4.3",
+    "lucide-react": "^1.14.0",
     "next": "^16.2.4",
     "next-auth": "^4.24.14",
     "node-html-parser": "^7.1.0",

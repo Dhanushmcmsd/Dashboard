@@ -36,9 +36,9 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   try {
     const auth = await requireAuth(["MANAGEMENT"]);
-    if (auth.error) {
-      return errorResponse(auth.error, auth.status);
-    }
+    if (auth.error) return errorResponse(auth.error, auth.status);
+
+    const user = auth.user!;
 
     const body = await req.json();
     const result = AlertCreateSchema.safeParse(body);
@@ -49,7 +49,7 @@ export async function POST(req: Request) {
     const alert = await prisma.alert.create({
       data: {
         message: result.data.message,
-        sentBy: auth.user.id,
+        sentBy: user.id,
       },
       include: { user: true },
     });

@@ -59,8 +59,8 @@ export default function DailyDashboardPage() {
 
   if (!data) return null;
 
-  // Aggregate DPD correctly
-  const combinedDpd: Record<string, { count: number; amount: number }> = {
+  type DpdKeys = "0" | "1-30" | "31-60" | "61-90" | "91-180" | "181+";
+  const combinedDpd: Record<DpdKeys, { count: number; amount: number }> = {
     "0": { count: 0, amount: 0 },
     "1-30": { count: 0, amount: 0 },
     "31-60": { count: 0, amount: 0 },
@@ -71,7 +71,7 @@ export default function DailyDashboardPage() {
 
   data.branches.forEach(b => {
     Object.keys(b.dpdBuckets).forEach(bucket => {
-      const bKey = bucket as keyof typeof combinedDpd;
+      const bKey = bucket as DpdKeys;
       const bData = b.dpdBuckets[bKey];
       if (bData) {
         combinedDpd[bKey].count += bData.count || 0;

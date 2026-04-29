@@ -22,11 +22,11 @@ export async function POST(req: Request) {
     }
 
     const auth = await requireAuth(["EMPLOYEE"]);
-    if (auth.error) {
-      return errorResponse(auth.error, auth.status);
+    if (auth.error || !auth.user) {
+      return errorResponse(auth.error || "Unauthorized", auth.status || 401);
     }
 
-    const user = auth.user;
+    const user = auth.user!;
     const formData = await req.formData();
     const file = formData.get("file") as File;
     const branch = formData.get("branch") as string;

@@ -39,7 +39,7 @@ export default function DpdBucketChart({ data }: Props) {
           <Tooltip
             cursor={{ fill: "rgba(255,255,255,0.05)" }}
             contentStyle={{ backgroundColor: "#18181F", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "8px" }}
-            formatter={(value: number, name: string) => {
+            formatter={(value: any, name: any) => {
               if (name === "amount") return [formatINRCompact(value), "Amount"];
               return [value, "Accounts"];
             }}

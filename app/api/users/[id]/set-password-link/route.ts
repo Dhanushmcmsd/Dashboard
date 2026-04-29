@@ -4,15 +4,16 @@ import { requireAuth } from "@/lib/auth-guard";
 import { successResponse, errorResponse } from "@/lib/api-utils";
 import * as jwt from "jsonwebtoken";
 
-export async function GET(req: Request, { params }: { params: { id: string } }) {
+export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const auth = await requireAuth(["ADMIN"]);
     if (auth.error) {
       return errorResponse(auth.error, auth.status);
     }
 
+    const resolvedParams = await params;
     const user = await prisma.user.findUnique({
-      where: { id: params.id },
+      where: { id: resolvedParams.id },
     });
 
     if (!user) {
