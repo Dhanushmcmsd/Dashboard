@@ -8,6 +8,7 @@ import { parseHtmlContent } from "@/lib/html-parser";
 import { buildDailySnapshot } from "@/lib/snapshot-generator";
 import { pusherServer, PUSHER_CHANNELS, PUSHER_EVENTS } from "@/lib/pusher-server";
 import rateLimit from "@/lib/rate-limit";
+import { BranchName } from "@/types";
 import { Prisma } from "@prisma/client";
 
 const limiter = rateLimit({ interval: 60000, uniqueTokenPerInterval: 500 });
@@ -39,8 +40,8 @@ export async function POST(req: Request) {
       return errorResponse("You are not assigned to this branch", 403);
     }
 
-    if (file.size > 5 * 1024 * 1024) {
-      return errorResponse("File size exceeds 5MB limit", 400);
+    if (file.size > 10 * 1024 * 1024) {
+      return errorResponse("File size exceeds 10MB limit", 400);
     }
 
     const fileName = file.name.toLowerCase();
@@ -53,29 +54,25 @@ export async function POST(req: Request) {
 
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
-    
+
     let parsedData = null;
     let htmlContent = null;
 
     if (isExcel) {
-      const rows = await parseExcelBuffer(arrayBuffer);
-      // We assume the employee uploads a file containing their branch
-      const row = rows.find((r) => r.branch === branch);
-      if (!row) return errorResponse("No matching branch data found in uploaded file", 400);
-      parsedData = row;
+      // Parser now takes branch directly and returns a single aggregated ParsedRow
+      parsedData = await parseExcelBuffer(arrayBuffer, branch as BranchName);
     } else {
       htmlContent = buffer.toString("utf-8");
       parsedData = parseHtmlContent(htmlContent);
       if (parsedData.branch.toLowerCase() !== branch.toLowerCase()) {
-         // Optionally force branch to be the selected one if parsing is fuzzy
-         parsedData.branch = branch as any;
+        parsedData.branch = branch as BranchName;
       }
     }
 
     const dateKey = getTodayKey();
     const monthKey = getMonthKey();
 
-    const upload = await prisma.upload.create({
+    await prisma.upload.create({
       data: {
         branch,
         fileType: isExcel ? "EXCEL" : "HTML",
@@ -88,22 +85,25 @@ export async function POST(req: Request) {
       },
     });
 
-    // Fire events and build snapshot in background to avoid blocking response
     Promise.all([
       buildDailySnapshot(dateKey).catch(console.error),
       pusherServer.trigger(PUSHER_CHANNELS.PRIVATE_UPLOADS, PUSHER_EVENTS.UPLOAD_COMPLETE, {
         branch,
         dateKey,
-        uploadedBy: user.name
+        uploadedBy: user.name,
       }),
       pusherServer.trigger(PUSHER_CHANNELS.PRIVATE_DASHBOARD, PUSHER_EVENTS.DASHBOARD_UPDATED, {
-        dateKey
-      })
+        dateKey,
+      }),
     ]).catch(console.error);
 
     return successResponse({ success: true, message: "File uploaded successfully" });
-  } catch (error) {
+  } catch (error: any) {
     console.error("Upload error:", error);
+    // Surface parser errors clearly to the employee
+    if (error?.message?.includes("Unrecognized Excel format") || error?.message?.includes("header row")) {
+      return errorResponse(error.message, 422);
+    }
     return errorResponse("Internal server error", 500);
   }
 }
