@@ -1,15 +1,19 @@
 import { PrismaClient } from "@prisma/client";
 
-const prismaClientSingleton = () => {
-  return new PrismaClient();
-};
+const globalForPrisma = globalThis as unknown as { _prisma: PrismaClient | undefined };
 
-type PrismaClientSingleton = ReturnType<typeof prismaClientSingleton>;
+function getPrisma(): PrismaClient {
+  if (!globalForPrisma._prisma) {
+    globalForPrisma._prisma = new PrismaClient();
+  }
+  return globalForPrisma._prisma;
+}
 
-const globalForPrisma = globalThis as unknown as {
-  prisma: PrismaClientSingleton | undefined;
-};
-
-export const prisma = globalForPrisma.prisma ?? prismaClientSingleton();
-
-if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
+// Proxy so all existing `prisma.user.findMany(...)` calls work unchanged,
+// but the PrismaClient is only instantiated on the first actual call —
+// never at module evaluation time (which caused build failures).
+export const prisma = new Proxy({} as PrismaClient, {
+  get(_target, prop) {
+    return (getPrisma() as any)[prop];
+  },
+});
