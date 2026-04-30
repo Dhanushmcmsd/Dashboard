@@ -46,7 +46,7 @@ model Upload {
   monthKey    String
   user        User     @relation(fields: [uploadedBy], references: [id])
 
-  @@unique([branch, dateKey])
+  @@index([branch, dateKey])
   @@index([uploadedBy])
   @@index([monthKey])
 }

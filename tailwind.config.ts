@@ -17,7 +17,7 @@ const config: Config = {
         success: "#16A34A",
         warning: "#D97706",
         danger: "#DC2626",
-        "text-main": "#E2E8F0",
+        "text-primary": "#E2E8F0",
         "text-muted": "#64748B",
         sidebar: "#0D0D12",
         branch: {
