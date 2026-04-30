@@ -13,24 +13,30 @@ export const authOptions: AuthOptions = {
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) {
-          throw new Error("Missing email or password");
+          throw new Error("Email and password are required");
         }
+
         const user = await prisma.user.findUnique({
           where: { email: credentials.email },
         });
+
         if (!user) {
-          throw new Error("User not found");
+          throw new Error("No account found with this email");
         }
+
         if (!user.isActive) {
-          throw new Error("Account is pending approval");
+          throw new Error("Your account is pending admin approval");
         }
+
         if (!user.passwordSet) {
-          throw new Error("Password not set");
+          throw new Error("Password not set. Please use your setup link");
         }
+
         const isValid = await bcrypt.compare(credentials.password, user.password);
         if (!isValid) {
-          throw new Error("Invalid password");
+          throw new Error("Incorrect password");
         }
+
         return {
           id: user.id,
           name: user.name,
@@ -41,19 +47,22 @@ export const authOptions: AuthOptions = {
       },
     }),
   ],
+
   session: {
     strategy: "jwt",
-    maxAge: 8 * 60 * 60,
+    maxAge: 8 * 60 * 60, // 8 hours
   },
+
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
-        token.role = user.role;
-        token.branches = user.branches;
+        token.role = (user as any).role;
+        token.branches = (user as any).branches;
       }
       return token;
     },
+
     async session({ session, token }) {
       if (token) {
         session.user = {
@@ -66,9 +75,15 @@ export const authOptions: AuthOptions = {
       return session;
     },
   },
+
   pages: {
     signIn: "/login",
     signOut: "/login",
     error: "/login",
   },
+
+  // Important: this ensures error messages are passed through
+  secret: process.env.NEXTAUTH_SECRET,
+
+  debug: process.env.NODE_ENV === "development",
 };

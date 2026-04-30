@@ -1,24 +1,23 @@
-import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { successResponse, errorResponse } from "@/lib/api-utils";
 import { HTTP_STATUS } from "@/lib/constants";
 
 export async function GET(req: Request) {
   try {
-    await new Promise((resolve) => setTimeout(resolve, 300));
-    
     const { searchParams } = new URL(req.url);
     const email = searchParams.get("email");
 
     if (!email) {
-      return errorResponse("Email is required");
+      return errorResponse("Email is required", HTTP_STATUS.BAD_REQUEST);
     }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) return errorResponse("Invalid email", HTTP_STATUS.BAD_REQUEST);
+    if (!emailRegex.test(email)) {
+      return errorResponse("Invalid email format", HTTP_STATUS.BAD_REQUEST);
+    }
 
     const user = await prisma.user.findUnique({
-      where: { email },
+      where: { email: email.toLowerCase().trim() },
       select: {
         id: true,
         isActive: true,
@@ -27,7 +26,11 @@ export async function GET(req: Request) {
     });
 
     if (!user) {
-      return successResponse({ exists: false, isActive: false, passwordSet: false });
+      return successResponse({
+        exists: false,
+        isActive: false,
+        passwordSet: false,
+      });
     }
 
     return successResponse({

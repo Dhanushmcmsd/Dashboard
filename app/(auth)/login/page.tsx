@@ -1,12 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Loader2 } from "lucide-react";
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const msg = searchParams.get("msg");
@@ -23,11 +23,13 @@ export default function LoginPage() {
 
     try {
       // Pre-check email status
-      const res = await fetch(`/api/auth/check-email?email=${encodeURIComponent(email)}`);
+      const res = await fetch(
+        `/api/auth/check-email?email=${encodeURIComponent(email)}`
+      );
       const data = await res.json();
 
       if (!data.success || !data.data.exists) {
-        setError("Account not found. Please sign up first.");
+        setError("No account found with this email. Please sign up first.");
         setLoading(false);
         return;
       }
@@ -39,7 +41,9 @@ export default function LoginPage() {
       }
 
       if (!data.data.passwordSet) {
-        setError("Password not set. Please check your email for the setup link.");
+        setError(
+          "Password not set. Please check your email for the setup link."
+        );
         setLoading(false);
         return;
       }
@@ -51,12 +55,22 @@ export default function LoginPage() {
       });
 
       if (result?.error) {
-        setError(result.error);
-      } else {
+        // NextAuth wraps errors — show a friendly message
+        if (
+          result.error.toLowerCase().includes("password") ||
+          result.error === "CredentialsSignin"
+        ) {
+          setError("Incorrect password. Please try again.");
+        } else {
+          setError(result.error);
+        }
+      } else if (result?.ok) {
         router.push("/auth/redirect");
+      } else {
+        setError("Sign in failed. Please try again.");
       }
     } catch (err) {
-      setError("An unexpected error occurred.");
+      setError("An unexpected error occurred. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -88,7 +102,9 @@ export default function LoginPage() {
 
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <label className="block text-sm font-medium text-text-muted mb-1.5">Email address</label>
+              <label className="block text-sm font-medium text-text-muted mb-1.5">
+                Email address
+              </label>
               <input
                 type="email"
                 required
@@ -96,11 +112,14 @@ export default function LoginPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 className="w-full bg-elevated border border-border rounded-lg px-4 py-2.5 text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
                 placeholder="you@company.com"
+                autoComplete="email"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-text-muted mb-1.5">Password</label>
+              <label className="block text-sm font-medium text-text-muted mb-1.5">
+                Password
+              </label>
               <input
                 type="password"
                 required
@@ -108,6 +127,7 @@ export default function LoginPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 className="w-full bg-elevated border border-border rounded-lg px-4 py-2.5 text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
                 placeholder="••••••••"
+                autoComplete="current-password"
               />
             </div>
 
@@ -116,18 +136,39 @@ export default function LoginPage() {
               disabled={loading}
               className="w-full bg-primary hover:bg-primary/90 text-white font-medium py-2.5 rounded-lg transition-colors flex items-center justify-center disabled:opacity-70"
             >
-              {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : "Sign in"}
+              {loading ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : (
+                "Sign in"
+              )}
             </button>
           </form>
 
           <p className="mt-6 text-center text-sm text-text-muted">
-            Don't have an account?{" "}
-            <Link href="/signup" className="text-primary hover:text-primary/80 font-medium transition-colors">
+            Don&apos;t have an account?{" "}
+            <Link
+              href="/signup"
+              className="text-primary hover:text-primary/80 font-medium transition-colors"
+            >
               Sign up
             </Link>
           </p>
         </div>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center bg-[#0A0A0C]">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        </div>
+      }
+    >
+      <LoginForm />
+    </Suspense>
   );
 }
