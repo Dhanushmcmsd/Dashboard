@@ -58,7 +58,7 @@ export async function POST(req: Request) {
     let htmlContent = null;
 
     if (isExcel) {
-      const rows = parseExcelBuffer(arrayBuffer);
+      const rows = await parseExcelBuffer(arrayBuffer);
       // We assume the employee uploads a file containing their branch
       const row = rows.find((r) => r.branch === branch);
       if (!row) return errorResponse("No matching branch data found in uploaded file", 400);
