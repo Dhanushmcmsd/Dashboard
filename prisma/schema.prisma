@@ -7,17 +7,6 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum Role {
-  ADMIN
-  EMPLOYEE
-  MANAGEMENT
-}
-
-enum FileType {
-  EXCEL
-  HTML
-}
-
 model User {
   id          String   @id @default(cuid())
   name        String
@@ -29,8 +18,8 @@ model User {
   passwordSet Boolean  @default(false)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-  uploads     Upload[]
   alerts      Alert[]
+  uploads     Upload[]
 }
 
 model Upload {
@@ -77,4 +66,21 @@ model Alert {
   user    User     @relation(fields: [sentBy], references: [id])
 
   @@index([sentAt])
+}
+
+model playing_with_neon {
+  id    Int    @id @default(autoincrement())
+  name  String
+  value Float? @db.Real
+}
+
+enum Role {
+  ADMIN
+  EMPLOYEE
+  MANAGEMENT
+}
+
+enum FileType {
+  EXCEL
+  HTML
 }
