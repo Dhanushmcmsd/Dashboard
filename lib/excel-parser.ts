@@ -1,28 +1,38 @@
-import * as xlsx from "xlsx";
+import ExcelJS from "exceljs";
 import { ParsedRow, BranchName, DpdBucket, BRANCHES } from "@/types";
 
-export function parseExcelBuffer(buffer: ArrayBuffer): ParsedRow[] {
-  const workbook = xlsx.read(buffer, { type: "array" });
-  const sheetName = workbook.SheetNames[0];
-  const sheet = workbook.Sheets[sheetName];
-  const data = xlsx.utils.sheet_to_json<Record<string, any>>(sheet);
+export async function parseExcelBuffer(buffer: ArrayBuffer): Promise<ParsedRow[]> {
+  const workbook = new ExcelJS.Workbook();
+  await workbook.xlsx.load(buffer);
+
+  const sheet = workbook.worksheets[0];
+  if (!sheet) return [];
+
+  const rows: Record<string, any>[] = [];
+  let headers: string[] = [];
+
+  sheet.eachRow((row, rowIndex) => {
+    if (rowIndex === 1) {
+      headers = (row.values as any[]).slice(1).map((h) =>
+        String(h ?? "").toLowerCase().trim()
+      );
+    } else {
+      const values = (row.values as any[]).slice(1);
+      const obj: Record<string, any> = {};
+      headers.forEach((h, i) => { obj[h] = values[i]; });
+      rows.push(obj);
+    }
+  });
 
   const parsedRows: ParsedRow[] = [];
 
-  for (const row of data) {
-    const rawKeys = Object.keys(row);
-    const normalizedRow: Record<string, any> = {};
-
-    for (const key of rawKeys) {
-      const normalizedKey = key.toLowerCase().trim();
-      normalizedRow[normalizedKey] = row[key];
-    }
-
+  for (const normalizedRow of rows) {
     const branchRaw = normalizedRow["branch"];
     if (!branchRaw) continue;
-    
-    // Attempt to match branch name
-    const branchName = BRANCHES.find((b) => b.toLowerCase() === String(branchRaw).toLowerCase());
+
+    const branchName = BRANCHES.find(
+      (b) => b.toLowerCase() === String(branchRaw).toLowerCase()
+    );
     if (!branchName) continue;
 
     const getNumber = (keys: string[]) => {

@@ -38,6 +38,7 @@
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
     "date-fns-tz": "^3.2.0",
+    "exceljs": "^4.4.0",
     "geist": "^1.7.0",
     "jsonwebtoken": "^9.0.3",
     "lru-cache": "^10.4.3",
