@@ -7,19 +7,44 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model User {
+// ---------------------------------------------------------------------------
+// Multi-tenant organization (add more fields as you white-label)
+// ---------------------------------------------------------------------------
+model Organization {
   id          String   @id @default(cuid())
   name        String
-  email       String   @unique
-  password    String
-  role        Role     @default(EMPLOYEE)
-  branches    String[]
-  isActive    Boolean  @default(false)
-  passwordSet Boolean  @default(false)
+  slug        String   @unique
+  logoUrl     String?
+  brandColor  String?  @default("#000000")
+  isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-  alerts      Alert[]
-  uploads     Upload[]
+  users       User[]
+
+  @@index([slug])
+}
+
+model User {
+  id             String        @id @default(cuid())
+  name           String
+  email          String        @unique
+  password       String
+  role           Role          @default(EMPLOYEE)
+  branches       String[]
+  isActive       Boolean       @default(false)
+  passwordSet    Boolean       @default(false)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  // Multi-tenancy
+  organizationId String?
+  organization   Organization? @relation(fields: [organizationId], references: [id])
+  // Relations
+  alerts         Alert[]
+  uploads        Upload[]
+  auditLogs      AuditLog[]
+
+  @@index([organizationId])
+  @@index([email])
 }
 
 model Upload {
@@ -68,6 +93,25 @@ model Alert {
   @@index([sentAt])
 }
 
+// ---------------------------------------------------------------------------
+// Audit trail — log every meaningful action
+// ---------------------------------------------------------------------------
+model AuditLog {
+  id         String   @id @default(cuid())
+  userId     String
+  action     String   // AuditAction string enum (validated in app layer)
+  resource   String   // e.g. "Upload", "User", "Alert"
+  resourceId String?
+  metadata   Json     @default("{}")
+  ipAddress  String?
+  createdAt  DateTime @default(now())
+  user       User     @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([action])
+  @@index([createdAt])
+}
+
 model playing_with_neon {
   id    Int    @id @default(autoincrement())
   name  String
@@ -75,9 +119,10 @@ model playing_with_neon {
 }
 
 enum Role {
+  SUPER_ADMIN
   ADMIN
-  EMPLOYEE
   MANAGEMENT
+  EMPLOYEE
 }
 
 enum FileType {
