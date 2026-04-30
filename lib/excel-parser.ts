@@ -8,7 +8,7 @@ function toNum(v: unknown): number {
   return isNaN(n) ? 0 : n;
 }
 
-function toDate(v: unknown): Date | null {
+function parseDate(v: unknown): Date | null {
   if (!v) return null;
   if (v instanceof Date) return v;
   const d = new Date(String(v));
@@ -23,7 +23,6 @@ function normHeader(h: unknown): string {
     .trim();
 }
 
-// Extract the date range from the report title row (row 1)
 function extractDateRange(titleCell: string): { from: Date | null; to: Date | null; label: string } {
   const m = titleCell.match(/between\s+([\d-]+)\s+and\s+([\d-]+)/i);
   if (!m) return { from: null, to: null, label: "" };
@@ -34,7 +33,6 @@ function extractDateRange(titleCell: string): { from: Date | null; to: Date | nu
   return { from: parse(m[1]), to: parse(m[2]), label: `${m[1]} to ${m[2]}` };
 }
 
-// Detect file type from headers present
 function detectFileType(headers: string[]): "LOAN_BALANCE" | "TRANSACTION" | "SUMMARY" {
   const has = (col: string) => headers.some((h) => h.includes(col));
   if (has("closing balance") && has("dpd")) return "LOAN_BALANCE";
@@ -42,7 +40,6 @@ function detectFileType(headers: string[]): "LOAN_BALANCE" | "TRANSACTION" | "SU
   return "SUMMARY";
 }
 
-// DPD bucket label
 function dpdBucket(dpd: number): DpdBucket {
   if (dpd <= 0) return "0";
   if (dpd <= 30) return "1-30";
@@ -53,7 +50,9 @@ function dpdBucket(dpd: number): DpdBucket {
 }
 
 function emptyBuckets(): Record<DpdBucket, { count: number; amount: number }> {
-  return Object.fromEntries(DPD_BUCKETS.map((b) => [b, { count: 0, amount: 0 }])) as Record<DpdBucket, { count: number; amount: number }>;
+  return Object.fromEntries(
+    DPD_BUCKETS.map((b) => [b, { count: 0, amount: 0 }])
+  ) as Record<DpdBucket, { count: number; amount: number }>;
 }
 
 // ── main parser ───────────────────────────────────────────────────────────────
@@ -68,12 +67,9 @@ export async function parseExcelBuffer(
   const sheet = workbook.worksheets[0];
   if (!sheet) throw new Error("Excel file has no sheets");
 
-  // Row 1 is usually a title like "Supra Pacific... Balance Statement Between ..."
-  const titleRow = sheet.getRow(1);
-  const titleText = String(titleRow.getCell(1).value ?? "");
+  const titleText = String(sheet.getRow(1).getCell(1).value ?? "");
   const dateRange = extractDateRange(titleText);
 
-  // Find the actual header row (first row where first cell looks like a column name, not a title)
   let headerRowIndex = 1;
   let headers: string[] = [];
 
@@ -81,7 +77,6 @@ export async function parseExcelBuffer(
     if (headers.length > 0) return;
     const vals = (row.values as unknown[]).slice(1);
     const first = normHeader(vals[0]);
-    // Header rows typically start with scheme/issue/loan type identifiers
     if (
       first.includes("scheme") ||
       first.includes("issue date") ||
@@ -97,30 +92,20 @@ export async function parseExcelBuffer(
 
   const fileType = detectFileType(headers);
 
-  // Collect data rows
   const rows: Record<string, unknown>[] = [];
   sheet.eachRow((row, idx) => {
     if (idx <= headerRowIndex) return;
     const vals = (row.values as unknown[]).slice(1);
-    if (!vals[0]) return; // skip empty rows
+    if (!vals[0]) return;
     const obj: Record<string, unknown> = {};
-    headers.forEach((h, i) => {
-      if (h) obj[h] = vals[i];
-    });
+    headers.forEach((h, i) => { if (h) obj[h] = vals[i]; });
     rows.push(obj);
   });
 
   if (rows.length === 0) throw new Error("No data rows found in Excel file");
 
-  // ── LOAN BALANCE STATEMENT ─────────────────────────────────────────────────
-  if (fileType === "LOAN_BALANCE") {
-    return parseLoanBalanceStatement(rows, branch, dateRange);
-  }
-
-  // ── TRANSACTION STATEMENT ─────────────────────────────────────────────────
-  if (fileType === "TRANSACTION") {
-    return parseTransactionStatement(rows, branch, dateRange);
-  }
+  if (fileType === "LOAN_BALANCE") return parseLoanBalanceStatement(rows, branch, dateRange);
+  if (fileType === "TRANSACTION") return parseTransactionStatement(rows, branch, dateRange);
 
   throw new Error(
     `Unrecognized Excel format. Expected a Loan Balance Statement or Transaction Statement. ` +
@@ -135,11 +120,10 @@ function parseLoanBalanceStatement(
   branch: BranchName,
   dateRange: { from: Date | null; to: Date | null; label: string }
 ): ParsedRow {
-  const toDate = dateRange.to ?? new Date();
-  const monthStart = new Date(toDate.getFullYear(), toDate.getMonth(), 1);
-  const yearStart = new Date(toDate.getFullYear() - 1, 3, 1); // April 1 (financial year)
+  const reportEndDate = dateRange.to ?? new Date();
+  const monthStart = new Date(reportEndDate.getFullYear(), reportEndDate.getMonth(), 1);
+  const yearStart = new Date(reportEndDate.getFullYear() - 1, 3, 1); // April 1 financial year
 
-  // running accumulators
   let totalAUM = 0;
   let totalGoldWt = 0;
   let totalInterestRateSum = 0;
@@ -158,15 +142,14 @@ function parseLoanBalanceStatement(
   for (const row of rows) {
     const get = (k: string) => toNum(row[k]);
 
-    // Key columns — match normalised header names
-    const closing = get("closing balance");
+    const closing     = get("closing balance");
     const disbursedAmt = get("disbursed amount");
     const principalCr = get("principal cr.") || get("principal cr");
     const interestRcvd = get("interest rcvd during") || get("interest rcvd");
-    const goldWt = get("gold wt.") || get("gold wt");
-    const rate = get("total interest rate");
-    const dpd = get("dpd");
-    const disbDate = toDate(row["disbursment date"] ?? row["disbursement date"]);
+    const goldWt      = get("gold wt.") || get("gold wt");
+    const rate        = get("total interest rate");
+    const dpd         = get("dpd");
+    const disbDate    = parseDate(row["disbursment date"] ?? row["disbursement date"]);
 
     const acct = String(row["account num#"] ?? row["account number"] ?? "");
     const cust = String(row["customer id"] ?? row["customer number"] ?? "");
@@ -181,7 +164,6 @@ function parseLoanBalanceStatement(
 
     if (rate > 0) { totalInterestRateSum += rate; rateCount++; }
 
-    // DPD classification
     const bucket = dpdBucket(dpd);
     buckets[bucket].count++;
     buckets[bucket].amount += closing;
@@ -189,22 +171,21 @@ function parseLoanBalanceStatement(
     if (dpd > 0) overdueAUM += closing;
     if (dpd > 90) gnpaAUM += closing;
 
-    // Disbursement periods
     if (disbDate) {
-      if (disbDate >= yearStart && disbDate <= toDate) ytdDisb += disbursedAmt;
-      if (disbDate >= monthStart && disbDate <= toDate) mtdDisb += disbursedAmt;
-      const todayDateOnly = new Date(toDate.getFullYear(), toDate.getMonth(), toDate.getDate());
-      const disbDateOnly = new Date(disbDate.getFullYear(), disbDate.getMonth(), disbDate.getDate());
-      if (disbDateOnly.getTime() === todayDateOnly.getTime()) ftdDisb += disbursedAmt;
+      if (disbDate >= yearStart && disbDate <= reportEndDate) ytdDisb += disbursedAmt;
+      if (disbDate >= monthStart && disbDate <= reportEndDate) mtdDisb += disbursedAmt;
+      const endDay  = new Date(reportEndDate.getFullYear(), reportEndDate.getMonth(), reportEndDate.getDate());
+      const disbDay = new Date(disbDate.getFullYear(), disbDate.getMonth(), disbDate.getDate());
+      if (disbDay.getTime() === endDay.getTime()) ftdDisb += disbursedAmt;
     }
   }
 
   const totalAccounts = accountSet.size || rows.length;
   const totalCustomers = customerSet.size;
-  const avgYield = rateCount > 0 ? totalInterestRateSum / rateCount : 0;
-  const gnpaPct = totalAUM > 0 ? (gnpaAUM / totalAUM) * 100 : 0;
-  const overduePct = totalAUM > 0 ? (overdueAUM / totalAUM) * 100 : 0;
-  const avgTicketSize = totalAccounts > 0 ? totalAUM / totalAccounts : 0;
+  const avgYield    = rateCount > 0 ? totalInterestRateSum / rateCount : 0;
+  const gnpaPct     = totalAUM > 0 ? (gnpaAUM / totalAUM) * 100 : 0;
+  const overduePct  = totalAUM > 0 ? (overdueAUM / totalAUM) * 100 : 0;
+  const avgTicketSize  = totalAccounts > 0 ? totalAUM / totalAccounts : 0;
   const avgGoldPerLoan = totalAccounts > 0 ? totalGoldWt / totalAccounts : 0;
 
   return {
@@ -214,7 +195,6 @@ function parseLoanBalanceStatement(
     collection: principalColl + interestColl,
     npa: gnpaAUM,
     dpdBuckets: buckets,
-
     totalAccounts,
     totalCustomers,
     avgYield,
@@ -244,34 +224,29 @@ function parseTransactionStatement(
 ): ParsedRow {
   let totalPrincipalColl = 0;
   let totalInterestColl = 0;
-  let totalAmountRcvd = 0;
   let totalDisb = 0;
   const accountSet = new Set<string>();
 
   for (const row of rows) {
     const get = (k: string) => toNum(row[k]);
-
-    const principalCr = get("principal credit");
-    const interestAmt = get("tot. intr. amount") || get("tot intr amount");
-    const amtRcvd = get("amount received");
-    const principalDr = get("principal debit");
+    const principalCr  = get("principal credit");
+    const interestAmt  = get("tot. intr. amount") || get("tot intr amount");
+    const principalDr  = get("principal debit");
     const acct = String(row["account number"] ?? "");
 
     if (acct) accountSet.add(acct);
     totalPrincipalColl += principalCr;
-    totalInterestColl += interestAmt;
-    totalAmountRcvd += amtRcvd;
-    if (principalDr > 0) totalDisb += principalDr; // new disbursements
+    totalInterestColl  += interestAmt;
+    if (principalDr > 0) totalDisb += principalDr;
   }
 
   return {
     branch,
-    closingBalance: 0,  // Not available in transaction statement; merge with LB if needed
+    closingBalance: 0,
     disbursement: totalDisb,
     collection: totalPrincipalColl + totalInterestColl,
     npa: 0,
     dpdBuckets: emptyBuckets(),
-
     totalAccounts: accountSet.size,
     principalCollection: totalPrincipalColl,
     interestCollection: totalInterestColl,
