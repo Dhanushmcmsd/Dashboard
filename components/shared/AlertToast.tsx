@@ -14,13 +14,14 @@ export default function AlertToast() {
 
   useEffect(() => {
     const pusher = getPusherClient();
+    if (!pusher) return; // Pusher not configured, skip silently
+
     const channel = pusher.subscribe(PUSHER_CHANNELS.PRIVATE_ALERTS);
 
     channel.bind(PUSHER_EVENTS.NEW_ALERT, (data: AlertRecord) => {
       if (seenAlerts.current.has(data.id)) return;
       seenAlerts.current.add(data.id);
 
-      // Clean up seen alerts after 2 mins to prevent memory leak
       setTimeout(() => {
         seenAlerts.current.delete(data.id);
       }, 120000);
