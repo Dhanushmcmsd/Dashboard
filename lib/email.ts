@@ -2,7 +2,7 @@ import { Resend } from "resend";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
-const FROM_EMAIL = "BranchSync <noreply@branchsync.suprapacific.com>";
+const FROM_EMAIL = "BranchSync <onboarding@resend.dev>";
 
 export async function sendWelcomeEmail(email: string, name: string) {
   try {
