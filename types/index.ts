@@ -14,11 +14,32 @@ export interface DpdBucketData {
 
 export interface ParsedRow {
   branch: BranchName;
-  closingBalance: number;
-  disbursement: number;
-  collection: number;
-  npa: number;
+  // Core metrics used across all dashboards
+  closingBalance: number;     // Total AUM
+  disbursement: number;       // MTD disbursement
+  collection: number;         // Principal + interest collected
+  npa: number;                // GNPA amount (DPD > 90)
   dpdBuckets: Record<DpdBucket, { count: number; amount: number }>;
+
+  // Extended Gold Loan / Loan metrics (optional — populated when source is Loan Balance Statement)
+  totalAccounts?: number;
+  totalCustomers?: number;
+  avgYield?: number;           // Average interest rate %
+  ftdDisbursement?: number;
+  mtdDisbursement?: number;
+  ytdDisbursement?: number;
+  goldPledgedGrams?: number;   // Gold Loan only
+  gnpaAmount?: number;
+  gnpaPct?: number;            // GNPA % = gnpaAmount / closingBalance
+  overdueAmount?: number;      // DPD > 0 closing balance sum
+  overduePct?: number;         // overdueAmount / closingBalance
+  avgTicketSize?: number;      // closingBalance / totalAccounts
+  avgGoldPerLoan?: number;     // goldPledgedGrams / totalAccounts
+  principalCollection?: number;
+  interestCollection?: number;
+  collectionEfficiency?: number; // from transaction statement
+  reportDateRange?: string;    // e.g. "01-04-2026 to 08-04-2026"
+  fileType?: "LOAN_BALANCE" | "TRANSACTION" | "SUMMARY";
 }
 
 export interface BranchDailyMetric extends ParsedRow {
