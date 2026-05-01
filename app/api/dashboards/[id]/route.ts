@@ -75,7 +75,7 @@ export async function PUT(req: NextRequest, { params }: Params) {
     return NextResponse.json(updated);
   } catch (err) {
     if (err instanceof ZodError) {
-      return NextResponse.json({ error: "Validation error", details: err.errors }, { status: 400 });
+      return NextResponse.json({ error: "Validation error", details: err.issues }, { status: 400 });
     }
     // Prisma not-found
     if ((err as { code?: string }).code === "P2025") {
