@@ -2,7 +2,6 @@
 
 import { BranchName } from "@/types";
 import { useBranchDashboard } from "@/hooks/useDashboardData";
-import { BRANCH_COLORS } from "@/lib/constants";
 import KPICard from "./KPICard";
 import DpdBucketChart from "./DpdBucketChart";
 import { format } from "date-fns";

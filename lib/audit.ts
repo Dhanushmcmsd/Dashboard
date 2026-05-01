@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/prisma';
+import { Prisma } from '@prisma/client';
 
 export type AuditAction =
   | 'USER_LOGIN'
@@ -28,7 +29,7 @@ export async function createAuditLog(params: {
         action: params.action,
         resource: params.resource,
         resourceId: params.resourceId,
-        metadata: params.metadata ?? {},
+        metadata: (params.metadata ?? {}) as Prisma.InputJsonValue,
         ipAddress: params.ipAddress,
       },
     });
