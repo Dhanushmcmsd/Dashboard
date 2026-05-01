@@ -1,11 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
 import { useDailyDashboard } from "@/hooks/useDashboardData";
-import { getPusherClient } from "@/lib/pusher-client";
-import { PUSHER_CHANNELS, PUSHER_EVENTS } from "@/lib/constants";
-import { useQueryClient } from "@tanstack/react-query";
-import { QUERY_KEYS } from "@/lib/query-client";
 import { Loader2, RefreshCcw, Calendar as CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
 import MissingBranchBanner from "@/components/shared/MissingBranchBanner";
@@ -16,21 +11,7 @@ import DpdBucketChart from "@/components/management/DpdBucketChart";
 import { formatINRCompact } from "@/lib/utils";
 
 export default function DailyDashboardPage() {
-  const qc = useQueryClient();
   const { data, isLoading, isError, refetch } = useDailyDashboard();
-
-  useEffect(() => {
-    const pusher = getPusherClient();
-    const channel = pusher.subscribe(PUSHER_CHANNELS.PRIVATE_DASHBOARD);
-
-    channel.bind(PUSHER_EVENTS.DASHBOARD_UPDATED, () => {
-      refetch();
-    });
-
-    return () => {
-      pusher.unsubscribe(PUSHER_CHANNELS.PRIVATE_DASHBOARD);
-    };
-  }, [refetch]);
 
   if (isLoading) {
     return (
@@ -88,7 +69,6 @@ export default function DailyDashboardPage() {
 
   return (
     <div className="space-y-8">
-      {/* Header */}
       <div className="flex flex-col md:flex-row md:items-end justify-between bg-surface border border-border rounded-xl p-6">
         <div>
           <h2 className="text-2xl font-bold text-text-primary flex items-center gap-3">

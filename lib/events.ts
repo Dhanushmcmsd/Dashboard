@@ -1,21 +1,23 @@
-import { Redis } from "@upstash/redis";
-
 export type AppEvent =
   | { type: "upload-complete"; branch: string; dateKey: string; uploadedBy: string }
   | { type: "dashboard-updated"; dateKey: string }
   | { type: "new-alert"; id: string; message: string; sentByName: string; sentAt: string };
 
-// Upstash Redis client (REST-based, works in both Edge and Node runtimes)
-const redis = new Redis({
-  url: process.env.UPSTASH_REDIS_REST_URL!,
-  token: process.env.UPSTASH_REDIS_REST_TOKEN!,
-});
-
 export async function publishEvent(event: AppEvent) {
   try {
-    await redis.publish("branchsync:events", JSON.stringify(event));
+    const { UPSTASH_REDIS_REST_URL, UPSTASH_REDIS_REST_TOKEN } = process.env;
+    if (!UPSTASH_REDIS_REST_URL || !UPSTASH_REDIS_REST_TOKEN) return;
+
+    // Publish via Upstash Streams (XADD) — REST API, no SDK needed
+    await fetch(`${UPSTASH_REDIS_REST_URL}`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${UPSTASH_REDIS_REST_TOKEN}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(["XADD", "branchsync:stream", "*", "data", JSON.stringify(event)]),
+    });
   } catch (error) {
-    // Never let event publishing crash an API route
-    console.error("[publishEvent] Failed to publish event:", error);
+    console.error("[publishEvent] Failed:", error);
   }
 }

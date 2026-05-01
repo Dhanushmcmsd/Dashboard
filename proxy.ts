@@ -2,7 +2,6 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { getToken } from 'next-auth/jwt';
 
-// Routes accessible without auth
 const PUBLIC_PATHS = [
   '/login',
   '/set-password',
@@ -12,7 +11,6 @@ const PUBLIC_PATHS = [
   '/api/health',
 ];
 
-// Role-to-path prefix mapping
 const ROLE_PATHS: Record<string, string[]> = {
   ADMIN: ['/admin', '/management', '/employee'],
   MANAGEMENT: ['/management', '/employee'],
@@ -20,15 +18,13 @@ const ROLE_PATHS: Record<string, string[]> = {
   SUPER_ADMIN: ['/admin', '/management', '/employee'],
 };
 
-export async function middleware(req: NextRequest) {
+export async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  // Allow public paths
   if (PUBLIC_PATHS.some((p) => pathname.startsWith(p))) {
     return NextResponse.next();
   }
 
-  // Validate JWT
   const token = await getToken({
     req,
     secret: process.env.NEXTAUTH_SECRET,
@@ -44,7 +40,6 @@ export async function middleware(req: NextRequest) {
   const role = token.role as string;
   const allowedPrefixes = ROLE_PATHS[role] ?? [];
 
-  // If path is role-specific and user lacks access → redirect to their dashboard
   const isRolePath = Object.values(ROLE_PATHS).flat().some((p) => pathname.startsWith(p));
   if (isRolePath && !allowedPrefixes.some((p) => pathname.startsWith(p))) {
     const forbiddenUrl = req.nextUrl.clone();

@@ -1,7 +1,6 @@
 import { NextRequest } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { createClient } from "redis";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -12,50 +11,52 @@ export async function GET(req: NextRequest) {
     return new Response("Unauthorized", { status: 401 });
   }
 
-  let subscriber: ReturnType<typeof createClient> | null = null;
+  const { UPSTASH_REDIS_REST_URL, UPSTASH_REDIS_REST_TOKEN } = process.env;
+  if (!UPSTASH_REDIS_REST_URL || !UPSTASH_REDIS_REST_TOKEN) {
+    return new Response("SSE not configured", { status: 503 });
+  }
+
+  const encoder = new TextEncoder();
 
   const stream = new ReadableStream({
     async start(controller) {
-      try {
-        subscriber = createClient({ url: process.env.KV_URL });
-        await subscriber.connect();
+      // Send initial ping
+      controller.enqueue(encoder.encode("event: connected\ndata: {}\n\n"));
 
-        // Send initial ping so the browser confirms the connection is open
-        controller.enqueue("event: connected\ndata: {}\n\n");
+      // Poll Upstash for new messages every 2 seconds via REST
+      // (Upstash doesn't support persistent TCP subscribe over HTTP)
+      let lastId = "$";
 
-        await subscriber.subscribe("branchsync:events", (message) => {
-          try {
-            controller.enqueue(`data: ${message}\n\n`);
-          } catch {
-            // Controller may already be closed
-          }
-        });
-
-        req.signal.addEventListener("abort", async () => {
-          try {
-            if (subscriber) {
-              await subscriber.unsubscribe();
-              await subscriber.disconnect();
+      const poll = async () => {
+        try {
+          const res = await fetch(
+            `${UPSTASH_REDIS_REST_URL}/xread/COUNT/10/BLOCK/2000/STREAMS/branchsync:stream/${lastId}`,
+            { headers: { Authorization: `Bearer ${UPSTASH_REDIS_REST_TOKEN}` } }
+          );
+          const json = await res.json();
+          if (json.result) {
+            for (const [, entries] of json.result) {
+              for (const [id, fields] of entries) {
+                lastId = id;
+                const dataIdx = fields.indexOf("data");
+                if (dataIdx !== -1) {
+                  controller.enqueue(encoder.encode(`data: ${fields[dataIdx + 1]}\n\n`));
+                }
+              }
             }
-            controller.close();
-          } catch {
-            // ignore cleanup errors
           }
-        });
-      } catch (error) {
-        console.error("[SSE] Connection error:", error);
-        controller.close();
-      }
-    },
-    async cancel() {
-      try {
-        if (subscriber) {
-          await subscriber.unsubscribe();
-          await subscriber.disconnect();
+        } catch {
+          // ignore poll errors
         }
-      } catch {
-        // ignore
-      }
+
+        if (!req.signal.aborted) {
+          setTimeout(poll, 100);
+        } else {
+          controller.close();
+        }
+      };
+
+      poll();
     },
   });
 
