@@ -129,6 +129,14 @@ function LoginForm() {
                 placeholder="••••••••"
                 autoComplete="current-password"
               />
+              <div className="text-right mt-1.5">
+                <Link
+                  href="/forgot-password"
+                  className="text-xs text-text-muted hover:text-primary transition-colors"
+                >
+                  Forgot password?
+                </Link>
+              </div>
             </div>
 
             <button

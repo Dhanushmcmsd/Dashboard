@@ -25,26 +25,39 @@ model Organization {
 }
 
 model User {
-  id             String        @id @default(cuid())
-  name           String
-  email          String        @unique
-  password       String
-  role           Role          @default(EMPLOYEE)
-  branches       String[]
-  isActive       Boolean       @default(false)
-  passwordSet    Boolean       @default(false)
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
+  id                  String               @id @default(cuid())
+  name                String
+  email               String               @unique
+  password            String
+  role                Role                 @default(EMPLOYEE)
+  branches            String[]
+  isActive            Boolean              @default(false)
+  passwordSet         Boolean              @default(false)
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
   // Multi-tenancy
-  organizationId String?
-  organization   Organization? @relation(fields: [organizationId], references: [id])
+  organizationId      String?
+  organization        Organization?        @relation(fields: [organizationId], references: [id])
   // Relations
-  alerts         Alert[]
-  uploads        Upload[]
-  auditLogs      AuditLog[]
+  alerts              Alert[]
+  uploads             Upload[]
+  auditLogs           AuditLog[]
+  passwordResetTokens PasswordResetToken[]
 
   @@index([organizationId])
   @@index([email])
+}
+
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  userId    String
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+  user      User      @relation(fields: [userId], references: [id])
+
+  @@index([tokenHash])
 }
 
 model Upload {
