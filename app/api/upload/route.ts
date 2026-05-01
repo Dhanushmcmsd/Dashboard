@@ -11,7 +11,7 @@ import rateLimit from "@/lib/rate-limit";
 import { BranchName } from "@/types";
 import { Prisma } from "@prisma/client";
 
-const limiter = rateLimit({ interval: 60000, uniqueTokenPerInterval: 500 });
+const limiter = rateLimit({ interval: 60000 });
 
 export async function POST(req: Request) {
   try {
