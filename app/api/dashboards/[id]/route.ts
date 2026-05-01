@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { DashboardLayoutSchema } from "@/lib/types";
 import { ZodError } from "zod";
 
-type Params = { params: { id: string } };
+type Params = { params: Promise<{ id: string }> };
 
 // GET /api/dashboards/[id] — fetch single (owner or shared)
 export async function GET(_req: NextRequest, { params }: Params) {
@@ -14,9 +14,11 @@ export async function GET(_req: NextRequest, { params }: Params) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const { id } = await params;
+
   try {
     const row = await prisma.dashboardLayout.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: { user: { select: { id: true, name: true } } },
     });
 
@@ -48,8 +50,10 @@ export async function PUT(req: NextRequest, { params }: Params) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const { id } = await params;
+
   try {
-    const existing = await prisma.dashboardLayout.findUnique({ where: { id: params.id } });
+    const existing = await prisma.dashboardLayout.findUnique({ where: { id } });
     if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
     if (existing.userId !== session.user.id) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
@@ -59,7 +63,7 @@ export async function PUT(req: NextRequest, { params }: Params) {
     const data = DashboardLayoutSchema.parse(body);
 
     const updated = await prisma.dashboardLayout.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         name: data.name,
         layout: data.layout,
@@ -89,14 +93,16 @@ export async function DELETE(_req: NextRequest, { params }: Params) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const { id } = await params;
+
   try {
-    const existing = await prisma.dashboardLayout.findUnique({ where: { id: params.id } });
+    const existing = await prisma.dashboardLayout.findUnique({ where: { id } });
     if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
     if (existing.userId !== session.user.id) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    await prisma.dashboardLayout.delete({ where: { id: params.id } });
+    await prisma.dashboardLayout.delete({ where: { id } });
     return NextResponse.json({ success: true });
   } catch (err) {
     if ((err as { code?: string }).code === "P2025") {
