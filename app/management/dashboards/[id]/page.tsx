@@ -5,12 +5,14 @@ import { prisma } from "@/lib/prisma";
 import DashboardViewClient from "./DashboardViewClient";
 import type { DashboardState, GridPosition, WidgetConfig } from "@/lib/types";
 
-export default async function DashboardPage({ params }: { params: { id: string } }) {
+export default async function DashboardPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) redirect("/auth/signin");
 
   const row = await prisma.dashboardLayout.findUnique({
-    where: { id: params.id },
+    where: { id },
     include: { user: { select: { id: true, name: true } } },
   });
 
@@ -23,8 +25,8 @@ export default async function DashboardPage({ params }: { params: { id: string }
   const initialState: DashboardState = {
     id: row.id,
     name: row.name,
-    layout: row.layout as GridPosition[],
-    widgets: row.widgets as WidgetConfig[],
+    layout: row.layout as unknown as GridPosition[],
+    widgets: row.widgets as unknown as WidgetConfig[],
     isShared: row.isShared,
     isDirty: false,
   };
