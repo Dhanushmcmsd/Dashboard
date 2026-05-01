@@ -67,7 +67,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(created, { status: 201 });
   } catch (err) {
     if (err instanceof ZodError) {
-      return NextResponse.json({ error: "Validation error", details: err.errors }, { status: 400 });
+      return NextResponse.json({ error: "Validation error", details: err.issues }, { status: 400 });
     }
     console.error("[POST /api/dashboards]", err);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
