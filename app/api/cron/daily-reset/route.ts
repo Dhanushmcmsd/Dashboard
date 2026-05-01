@@ -12,13 +12,13 @@ export async function POST(req: Request) {
     }
 
     const dateKey = getTodayKey();
+    // buildDailySnapshot returns DailyDashboardData directly
     const snapshot = await buildDailySnapshot(dateKey);
 
     // Feature 7: notify all active admins about upload status
     try {
-      const combinedData = snapshot.combinedData as any;
-      const uploadedBranches: string[] = combinedData?.uploadedBranches ?? [];
-      const missingBranches: string[] = snapshot.missingBranches ?? [];
+      const uploadedBranches = snapshot.uploadedBranches ?? [];
+      const missingBranches  = snapshot.missingBranches  ?? [];
 
       const admins = await prisma.user.findMany({
         where: { role: "ADMIN", isActive: true },
@@ -43,7 +43,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json({
       success: true,
-      dateKey: snapshot.dateKey,
+      dateKey:         snapshot.dateKey,
       missingBranches: snapshot.missingBranches,
     });
   } catch (error) {
