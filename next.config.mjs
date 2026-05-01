@@ -2,6 +2,9 @@ import crypto from 'node:crypto';
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Required for react-grid-layout and react-resizable (CommonJS packages)
+  transpilePackages: ['react-grid-layout', 'react-resizable'],
+
   async headers() {
     return [
       {
@@ -38,12 +41,10 @@ const nextConfig = {
     ];
   },
 
-  // Restrict CORS to same origin for API routes
   async rewrites() {
     return [];
   },
 
-  // Log only in production
   logging: {
     fetches: {
       fullUrl: process.env.NODE_ENV === 'development',
