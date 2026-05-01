@@ -6,7 +6,7 @@ import { getTodayKey, getMonthKey } from "@/lib/utils";
 import { parseExcelBuffer } from "@/lib/excel-parser";
 import { parseHtmlContent } from "@/lib/html-parser";
 import { buildDailySnapshot } from "@/lib/snapshot-generator";
-import { pusherServer, PUSHER_CHANNELS, PUSHER_EVENTS } from "@/lib/pusher-server";
+import { publishEvent } from "@/lib/events";
 import rateLimit from "@/lib/rate-limit";
 import { BranchName } from "@/types";
 import { Prisma } from "@prisma/client";
@@ -59,7 +59,6 @@ export async function POST(req: Request) {
     let htmlContent = null;
 
     if (isExcel) {
-      // Parser now takes branch directly and returns a single aggregated ParsedRow
       parsedData = await parseExcelBuffer(arrayBuffer, branch as BranchName);
     } else {
       htmlContent = buffer.toString("utf-8");
@@ -87,20 +86,13 @@ export async function POST(req: Request) {
 
     Promise.all([
       buildDailySnapshot(dateKey).catch(console.error),
-      pusherServer.trigger(PUSHER_CHANNELS.PRIVATE_UPLOADS, PUSHER_EVENTS.UPLOAD_COMPLETE, {
-        branch,
-        dateKey,
-        uploadedBy: user.name,
-      }),
-      pusherServer.trigger(PUSHER_CHANNELS.PRIVATE_DASHBOARD, PUSHER_EVENTS.DASHBOARD_UPDATED, {
-        dateKey,
-      }),
+      publishEvent({ type: "upload-complete", branch, dateKey, uploadedBy: user.name }),
+      publishEvent({ type: "dashboard-updated", dateKey }),
     ]).catch(console.error);
 
     return successResponse({ success: true, message: "File uploaded successfully" });
   } catch (error: any) {
     console.error("Upload error:", error);
-    // Surface parser errors clearly to the employee
     if (error?.message?.includes("Unrecognized Excel format") || error?.message?.includes("header row")) {
       return errorResponse(error.message, 422);
     }

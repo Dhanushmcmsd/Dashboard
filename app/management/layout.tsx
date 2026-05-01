@@ -5,7 +5,7 @@ import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import { LogOut, Loader2, Calendar, CalendarDays, Bell } from "lucide-react";
 import { cn } from "@/lib/utils";
-import AlertToast from "@/components/shared/AlertToast";
+import EventsProvider from "@/components/providers/EventsProvider";
 import { BRANCHES } from "@/types";
 import { signOut } from "next-auth/react";
 
@@ -91,7 +91,7 @@ export default function ManagementLayout({ children }: { children: React.ReactNo
         </div>
       </main>
 
-      <AlertToast />
+      <EventsProvider>{null}</EventsProvider>
     </div>
   );
 }

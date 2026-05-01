@@ -2,7 +2,7 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import AdminNav from "@/components/admin/AdminNav";
-import AlertToast from "@/components/shared/AlertToast";
+import EventsProvider from "@/components/providers/EventsProvider";
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const session = await getServerSession(authOptions);
@@ -39,7 +39,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         </div>
       </main>
 
-      <AlertToast />
+      <EventsProvider>{null}</EventsProvider>
     </div>
   );
 }

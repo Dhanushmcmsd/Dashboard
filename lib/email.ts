@@ -1,8 +1,13 @@
 import { Resend } from "resend";
+import { DailyDashboardData } from "@/types";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 const FROM_EMAIL = "BranchSync <onboarding@resend.dev>";
+
+function fmt(n: number) {
+  return new Intl.NumberFormat("en-IN", { maximumFractionDigits: 0 }).format(n);
+}
 
 export async function sendWelcomeEmail(email: string, name: string) {
   try {
@@ -92,5 +97,80 @@ export async function sendUploadReminderEmail(
     });
   } catch (error) {
     console.error("Error sending upload reminder email:", error);
+  }
+}
+
+export async function sendDailySummaryEmail(
+  email: string,
+  name: string,
+  data: DailyDashboardData
+) {
+  try {
+    const safeName = (name || "User").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+    const branchRows = data.branches
+      .map(
+        (b) => `
+      <tr>
+        <td style="padding:8px 12px;border-bottom:1px solid #2a2a2e;">${b.branch}</td>
+        <td style="padding:8px 12px;border-bottom:1px solid #2a2a2e;text-align:right;">₹${fmt(b.closingBalance || 0)}</td>
+        <td style="padding:8px 12px;border-bottom:1px solid #2a2a2e;text-align:right;">₹${fmt(b.disbursement || 0)}</td>
+        <td style="padding:8px 12px;border-bottom:1px solid #2a2a2e;text-align:right;">₹${fmt(b.collection || 0)}</td>
+        <td style="padding:8px 12px;border-bottom:1px solid #2a2a2e;text-align:right;">₹${fmt(b.npa || 0)}</td>
+      </tr>`
+      )
+      .join("");
+
+    const missingWarning =
+      data.missingBranches.length > 0
+        ? `<p style="color:#f87171;margin-top:16px;">⚠️ Missing data from: <strong>${data.missingBranches.join(", ")}</strong></p>`
+        : `<p style="color:#4ade80;margin-top:16px;">✅ All branches uploaded today.</p>`;
+
+    const html = `
+      <div style="font-family:sans-serif;background:#0A0A0C;color:#e5e5e5;padding:24px;border-radius:12px;max-width:700px;">
+        <h2 style="color:#fff;margin-bottom:4px;">📊 BranchSync Daily Summary</h2>
+        <p style="color:#888;margin-top:0;">Report for ${data.dateKey}</p>
+
+        <p>Hi ${safeName},</p>
+        <p>Here's today's performance snapshot across all branches:</p>
+
+        <table style="width:100%;border-collapse:collapse;font-size:14px;">
+          <thead>
+            <tr style="background:#1a1a1e;">
+              <th style="padding:10px 12px;text-align:left;color:#888;font-weight:600;">Branch</th>
+              <th style="padding:10px 12px;text-align:right;color:#888;font-weight:600;">Closing Balance</th>
+              <th style="padding:10px 12px;text-align:right;color:#888;font-weight:600;">Disbursement</th>
+              <th style="padding:10px 12px;text-align:right;color:#888;font-weight:600;">Collection</th>
+              <th style="padding:10px 12px;text-align:right;color:#888;font-weight:600;">NPA</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${branchRows}
+            <tr style="background:#1a1a1e;font-weight:700;">
+              <td style="padding:10px 12px;">TOTAL</td>
+              <td style="padding:10px 12px;text-align:right;">₹${fmt(data.totals.closingBalance)}</td>
+              <td style="padding:10px 12px;text-align:right;">₹${fmt(data.totals.disbursement)}</td>
+              <td style="padding:10px 12px;text-align:right;">₹${fmt(data.totals.collection)}</td>
+              <td style="padding:10px 12px;text-align:right;">₹${fmt(data.totals.npa)}</td>
+            </tr>
+          </tbody>
+        </table>
+
+        ${missingWarning}
+
+        <p style="margin-top:24px;">
+          <a href="${process.env.NEXTAUTH_URL}/management/daily" style="background:#6366f1;color:#fff;padding:10px 20px;border-radius:8px;text-decoration:none;font-weight:600;">View Full Dashboard →</a>
+        </p>
+      </div>
+    `;
+
+    await resend.emails.send({
+      from: FROM_EMAIL,
+      to: email,
+      subject: `📊 BranchSync Daily Summary — ${data.dateKey}`,
+      html,
+    });
+  } catch (error) {
+    console.error("Error sending daily summary email:", error);
   }
 }

@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth-guard";
 import { successResponse, errorResponse, validationError } from "@/lib/api-utils";
 import { AlertCreateSchema } from "@/lib/validations";
-import { pusherServer, PUSHER_CHANNELS, PUSHER_EVENTS } from "@/lib/pusher-server";
+import { publishEvent } from "@/lib/events";
 
 export async function GET(req: Request) {
   try {
@@ -62,7 +62,13 @@ export async function POST(req: Request) {
       sentAt: alert.sentAt.toISOString(),
     };
 
-    await pusherServer.trigger(PUSHER_CHANNELS.PRIVATE_ALERTS, PUSHER_EVENTS.NEW_ALERT, formatted);
+    await publishEvent({
+      type: "new-alert",
+      id: alert.id,
+      message: alert.message,
+      sentByName: alert.user.name,
+      sentAt: alert.sentAt.toISOString(),
+    });
 
     return successResponse(formatted, 201);
   } catch (error) {
