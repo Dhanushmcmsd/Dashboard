@@ -8,6 +8,7 @@ import { parseHtmlContent } from "@/lib/html-parser";
 import { buildDailySnapshot } from "@/lib/snapshot-generator";
 import { publishEvent } from "@/lib/events";
 import rateLimit from "@/lib/rate-limit";
+import { createAuditLog } from "@/lib/audit";
 import { BranchName } from "@/types";
 import { Prisma } from "@prisma/client";
 
@@ -71,7 +72,7 @@ export async function POST(req: Request) {
     const dateKey = getTodayKey();
     const monthKey = getMonthKey();
 
-    await prisma.upload.create({
+    const upload = await prisma.upload.create({
       data: {
         branch,
         fileType: isExcel ? "EXCEL" : "HTML",
@@ -84,7 +85,16 @@ export async function POST(req: Request) {
       },
     });
 
+    // Fire-and-forget: audit + snapshot + events
     Promise.all([
+      createAuditLog({
+        userId: user.id,
+        action: "UPLOAD_CREATED",
+        resource: "Upload",
+        resourceId: upload.id,
+        metadata: { branch, fileName: file.name, dateKey },
+        ipAddress: ip,
+      }),
       buildDailySnapshot(dateKey).catch(console.error),
       publishEvent({ type: "upload-complete", branch, dateKey, uploadedBy: user.name }),
       publishEvent({ type: "dashboard-updated", dateKey }),

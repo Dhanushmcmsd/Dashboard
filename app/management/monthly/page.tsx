@@ -1,7 +1,7 @@
 "use client";
 
 import { useMonthlyDashboard } from "@/hooks/useDashboardData";
-import { Loader2, RefreshCcw, CalendarDays, TrendingUp, TrendingDown, Minus } from "lucide-react";
+import { Loader2, RefreshCcw, CalendarDays, TrendingUp, TrendingDown, Minus, Download } from "lucide-react";
 import { format } from "date-fns";
 import KPICard from "@/components/management/KPICard";
 import BranchComparisonChart from "@/components/management/BranchComparisonChart";
@@ -24,7 +24,7 @@ export default function MonthlyDashboardPage() {
       <div className="bg-danger/10 border border-danger/20 rounded-xl p-8 text-center max-w-lg mx-auto mt-12">
         <h3 className="text-danger font-medium text-lg mb-2">Failed to load dashboard</h3>
         <p className="text-danger/80 mb-6">There was an error fetching the monthly data.</p>
-        <button 
+        <button
           onClick={() => refetch()}
           className="px-6 py-2 bg-surface border border-border rounded-lg font-medium hover:bg-elevated transition-colors inline-flex items-center"
         >
@@ -39,7 +39,7 @@ export default function MonthlyDashboardPage() {
 
   return (
     <div className="space-y-8">
-      {/* Header */}
+      {/* ── Header ── */}
       <div className="flex flex-col md:flex-row md:items-end justify-between bg-surface border border-border rounded-xl p-6">
         <div>
           <h2 className="text-2xl font-bold text-text-primary flex items-center gap-3">
@@ -53,8 +53,19 @@ export default function MonthlyDashboardPage() {
             Aggregated monthly totals and month-over-month growth.
           </p>
         </div>
-        <div className="mt-4 md:mt-0 text-left md:text-right">
-          <div className="flex items-center gap-3 md:justify-end mb-1">
+
+        <div className="mt-4 md:mt-0 text-left md:text-right flex flex-col items-start md:items-end gap-3">
+          {/* Export button */}
+          <button
+            onClick={() => window.open(`/api/export/monthly?month=${data.monthKey}`)}
+            className="flex items-center gap-1.5 bg-elevated hover:bg-border border border-border text-text-primary text-sm px-3 py-1.5 rounded-lg transition-colors"
+            title="Export to Excel"
+          >
+            <Download className="w-4 h-4" />
+            Export Excel
+          </button>
+
+          <div className="flex items-center gap-3 md:justify-end">
             <span className="text-sm font-medium px-2.5 py-1 bg-surface border border-border rounded text-text-primary">
               {data.branches.length}
             </span>
@@ -115,13 +126,13 @@ export default function MonthlyDashboardPage() {
                       <td className="px-6 py-4 text-center">
                         {b.growthPercent !== null ? (
                           <div className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium ${
-                            b.trend === "up" ? "text-success bg-success/10" : 
-                            b.trend === "down" ? "text-danger bg-danger/10" : 
+                            b.trend === "up"      ? "text-success bg-success/10" :
+                            b.trend === "down"    ? "text-danger bg-danger/10" :
                             "text-text-muted bg-surface"
                           }`}>
-                            {b.trend === "up" && <TrendingUp className="w-3 h-3" />}
-                            {b.trend === "down" && <TrendingDown className="w-3 h-3" />}
-                            {b.trend === "neutral" && <Minus className="w-3 h-3" />}
+                            {b.trend === "up"      && <TrendingUp   className="w-3 h-3" />}
+                            {b.trend === "down"    && <TrendingDown  className="w-3 h-3" />}
+                            {b.trend === "neutral" && <Minus         className="w-3 h-3" />}
                             {Math.abs(b.growthPercent)}%
                           </div>
                         ) : (

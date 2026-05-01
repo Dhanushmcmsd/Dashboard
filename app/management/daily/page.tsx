@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useDailyDashboard } from "@/hooks/useDashboardData";
-import { Loader2, RefreshCcw, Calendar as CalendarIcon, RotateCcw } from "lucide-react";
+import { Loader2, RefreshCcw, Calendar as CalendarIcon, RotateCcw, Download } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import MissingBranchBanner from "@/components/shared/MissingBranchBanner";
 import BranchUploadStatus from "@/components/management/BranchUploadStatus";
@@ -103,8 +103,17 @@ export default function DailyDashboardPage() {
         </div>
 
         <div className="mt-4 md:mt-0 flex flex-col items-start md:items-end gap-3">
-          {/* Date picker + Today button */}
+          {/* Controls row: Export + Today + Date picker */}
           <div className="flex items-center gap-2">
+            <button
+              onClick={() => window.open(`/api/export/daily?date=${selectedDate}`)}
+              className="flex items-center gap-1.5 bg-elevated hover:bg-border border border-border text-text-primary text-sm px-3 py-1.5 rounded-lg transition-colors"
+              title="Export to Excel"
+            >
+              <Download className="w-4 h-4" />
+              Export Excel
+            </button>
+
             {isViewingPast && (
               <button
                 onClick={() => setSelectedDate(todayStr)}
@@ -115,6 +124,7 @@ export default function DailyDashboardPage() {
                 Today
               </button>
             )}
+
             <input
               type="date"
               value={selectedDate}
@@ -124,7 +134,7 @@ export default function DailyDashboardPage() {
             />
           </div>
 
-          {/* Branch upload count */}
+          {/* Branch count + last updated */}
           <div className="flex items-center gap-3 md:justify-end">
             <span className="text-sm font-medium px-2.5 py-1 bg-surface border border-border rounded text-text-primary">
               {data.uploadedBranches.length} / 5
