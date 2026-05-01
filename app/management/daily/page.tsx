@@ -81,7 +81,7 @@ export default function DailyDashboardPage() {
 
   return (
     <div className="space-y-8">
-      {/* Header */}
+      {/* ── Header ── */}
       <div className="flex flex-col md:flex-row md:items-end justify-between bg-surface border border-border rounded-xl p-6">
         <div>
           <h2 className="text-2xl font-bold text-text-primary flex items-center gap-3">
@@ -94,7 +94,6 @@ export default function DailyDashboardPage() {
           <p className="text-sm text-text-muted mt-2">
             Aggregated data for {data.dateKey} based on uploaded branch reports.
           </p>
-          {/* Past-date pill badge */}
           {isViewingPast && (
             <div className="mt-3 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs font-medium">
               <CalendarIcon className="w-3 h-3" />
@@ -104,7 +103,7 @@ export default function DailyDashboardPage() {
         </div>
 
         <div className="mt-4 md:mt-0 flex flex-col items-start md:items-end gap-3">
-          {/* Date navigator */}
+          {/* Date picker + Today button */}
           <div className="flex items-center gap-2">
             {isViewingPast && (
               <button
@@ -125,7 +124,7 @@ export default function DailyDashboardPage() {
             />
           </div>
 
-          {/* Branch count + last updated */}
+          {/* Branch upload count */}
           <div className="flex items-center gap-3 md:justify-end">
             <span className="text-sm font-medium px-2.5 py-1 bg-surface border border-border rounded text-text-primary">
               {data.uploadedBranches.length} / 5
@@ -211,7 +210,7 @@ export default function DailyDashboardPage() {
                       <td className="px-6 py-4 text-right text-text-muted text-xs">
                         {format(new Date(b.uploadedAt), "h:mm a")}
                       </td>
-avetr>
+                    </tr>
                   ))}
                   <tr className="bg-elevated font-semibold text-text-primary border-t-2 border-border/80">
                     <td className="px-6 py-4">Total</td>
