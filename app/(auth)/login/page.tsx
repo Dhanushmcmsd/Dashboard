@@ -60,7 +60,7 @@ function LoginForm() {
   return (
     <div className="min-h-screen flex" style={{ background: "#080C14" }}>
 
-      {/* ── Left brand panel ── */}
+      {/* Left brand panel */}
       <div
         className="hidden lg:flex flex-col justify-between w-[420px] shrink-0 px-12 py-14"
         style={{
@@ -68,15 +68,14 @@ function LoginForm() {
           borderRight: "1px solid rgba(255,255,255,0.05)",
         }}
       >
-        {/* Logo */}
-        <div>
+        {/* Logo — top */}
+        <div className="flex flex-col items-start gap-3">
           <img
-            src="/supra-pacific-rights-issue-logo.jpg"
-            alt="Supra Pacific"
-            width={52}
-            height={52}
-            className="rounded-xl object-contain"
-            style={{ background: "rgba(255,255,255,0.04)", padding: "6px" }}
+            src="/supra-pacific-rights-issue-logo.png"
+            alt="Supra Pacific Logo"
+            width={120}
+            height={120}
+            className="object-contain"
           />
         </div>
 
@@ -88,20 +87,12 @@ function LoginForm() {
           >
             Management Information System
           </div>
-          <h1 className="text-4xl font-bold text-white leading-tight mb-4">
-            Supra Pacific
-          </h1>
+          <h1 className="text-4xl font-bold text-white leading-tight mb-4">Supra Pacific</h1>
           <p className="text-sm leading-relaxed" style={{ color: "#64748B" }}>
             Centralised branch performance, AUM tracking, and financial analytics — all in one place.
           </p>
-
-          {/* Feature pills */}
           <div className="mt-8 space-y-3">
-            {[
-              "Branch Performance Analytics",
-              "Gold Loan & AUM Tracking",
-              "Real-time Alerts",
-            ].map((f) => (
+            {["Branch Performance Analytics", "Gold Loan & AUM Tracking", "Real-time Alerts"].map((f) => (
               <div key={f} className="flex items-center gap-3">
                 <div className="w-1.5 h-1.5 rounded-full" style={{ background: "#3B82F6" }} />
                 <span className="text-xs" style={{ color: "#475569" }}>{f}</span>
@@ -110,36 +101,32 @@ function LoginForm() {
           </div>
         </div>
 
-        {/* Footer */}
         <p className="text-xs" style={{ color: "#1E293B" }}>
           © {new Date().getFullYear()} Supra Pacific. All rights reserved.
         </p>
       </div>
 
-      {/* ── Right form panel ── */}
+      {/* Right form panel */}
       <div className="flex-1 flex items-center justify-center px-6 py-12">
         <div className="w-full max-w-[400px]">
 
           {/* Mobile logo */}
           <div className="flex lg:hidden items-center gap-3 mb-10">
             <img
-              src="/supra-pacific-rights-issue-logo.jpg"
+              src="/supra-pacific-rights-issue-logo.png"
               alt="Supra Pacific"
-              width={36}
-              height={36}
-              className="rounded-lg object-contain"
-              style={{ background: "rgba(255,255,255,0.05)", padding: "4px" }}
+              width={48}
+              height={48}
+              className="object-contain"
             />
             <span className="text-base font-semibold text-white">Supra Pacific</span>
           </div>
 
-          {/* Heading */}
           <div className="mb-8">
             <h2 className="text-2xl font-bold text-white mb-1">Welcome back</h2>
             <p className="text-sm" style={{ color: "#475569" }}>Sign in to your account to continue</p>
           </div>
 
-          {/* Alerts */}
           {msg === "password-set" && (
             <div
               className="flex items-start gap-3 mb-6 p-4 rounded-xl text-sm"
@@ -160,18 +147,11 @@ function LoginForm() {
             </div>
           )}
 
-          {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Email */}
             <div>
-              <label className="block text-xs font-medium mb-2" style={{ color: "#64748B" }}>
-                Email address
-              </label>
+              <label className="block text-xs font-medium mb-2" style={{ color: "#64748B" }}>Email address</label>
               <div className="relative">
-                <Mail
-                  className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4"
-                  style={{ color: "#334155" }}
-                />
+                <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: "#334155" }} />
                 <input
                   type="email"
                   required
@@ -180,33 +160,20 @@ function LoginForm() {
                   placeholder="you@company.com"
                   autoComplete="email"
                   className="w-full pl-10 pr-4 py-3 rounded-xl text-sm text-white placeholder-slate-600 outline-none transition-all"
-                  style={{
-                    background: "#0D1525",
-                    border: "1px solid #1E293B",
-                  }}
+                  style={{ background: "#0D1525", border: "1px solid #1E293B" }}
                   onFocus={(e) => (e.target.style.borderColor = "#3B82F6")}
                   onBlur={(e) => (e.target.style.borderColor = "#1E293B")}
                 />
               </div>
             </div>
 
-            {/* Password */}
             <div>
               <div className="flex items-center justify-between mb-2">
                 <label className="text-xs font-medium" style={{ color: "#64748B" }}>Password</label>
-                <Link
-                  href="/forgot-password"
-                  className="text-xs transition-colors"
-                  style={{ color: "#3B82F6" }}
-                >
-                  Forgot password?
-                </Link>
+                <Link href="/forgot-password" className="text-xs" style={{ color: "#3B82F6" }}>Forgot password?</Link>
               </div>
               <div className="relative">
-                <Lock
-                  className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4"
-                  style={{ color: "#334155" }}
-                />
+                <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: "#334155" }} />
                 <input
                   type="password"
                   required
@@ -215,46 +182,28 @@ function LoginForm() {
                   placeholder="••••••••"
                   autoComplete="current-password"
                   className="w-full pl-10 pr-4 py-3 rounded-xl text-sm text-white placeholder-slate-600 outline-none transition-all"
-                  style={{
-                    background: "#0D1525",
-                    border: "1px solid #1E293B",
-                  }}
+                  style={{ background: "#0D1525", border: "1px solid #1E293B" }}
                   onFocus={(e) => (e.target.style.borderColor = "#3B82F6")}
                   onBlur={(e) => (e.target.style.borderColor = "#1E293B")}
                 />
               </div>
             </div>
 
-            {/* Submit */}
             <button
               type="submit"
               disabled={loading}
               className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold text-white transition-all mt-2 disabled:opacity-60"
-              style={{ background: loading ? "#1D4ED8" : "#2563EB" }}
+              style={{ background: "#2563EB" }}
               onMouseEnter={(e) => !loading && ((e.target as HTMLElement).style.background = "#1D4ED8")}
               onMouseLeave={(e) => !loading && ((e.target as HTMLElement).style.background = "#2563EB")}
             >
-              {loading ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <>
-                  Sign in
-                  <ArrowRight className="w-4 h-4" />
-                </>
-              )}
+              {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <><span>Sign in</span><ArrowRight className="w-4 h-4" /></>}
             </button>
           </form>
 
-          {/* Sign up */}
           <p className="mt-6 text-center text-xs" style={{ color: "#334155" }}>
             Don&apos;t have an account?{" "}
-            <Link
-              href="/signup"
-              className="font-medium transition-colors"
-              style={{ color: "#3B82F6" }}
-            >
-              Request access
-            </Link>
+            <Link href="/signup" className="font-medium" style={{ color: "#3B82F6" }}>Request access</Link>
           </p>
         </div>
       </div>
