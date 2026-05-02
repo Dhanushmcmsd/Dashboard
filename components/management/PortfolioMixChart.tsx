@@ -6,7 +6,6 @@ import {
   Cell,
   Tooltip,
   ResponsiveContainer,
-  TooltipProps,
 } from "recharts";
 import { formatINRCompact } from "@/lib/utils";
 
@@ -33,9 +32,14 @@ type SliceEntry = {
   color: string;
 };
 
-function CustomTooltip({ active, payload }: TooltipProps<number, string>) {
+interface CustomTooltipProps {
+  active?: boolean;
+  payload?: { payload: SliceEntry }[];
+}
+
+function CustomTooltip({ active, payload }: CustomTooltipProps) {
   if (!active || !payload || payload.length === 0) return null;
-  const entry = payload[0].payload as SliceEntry;
+  const entry = payload[0].payload;
   return (
     <div
       style={{
@@ -87,11 +91,8 @@ export default function PortfolioMixChart({ branches }: Props) {
           </PieChart>
         </ResponsiveContainer>
 
-        {/* Center label — absolutely centered inside the chart container */}
-        <div
-          className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none"
-          style={{ paddingBottom: "0px" }}
-        >
+        {/* Center label */}
+        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
           <span className="text-lg font-bold text-text-primary leading-tight">
             {formatINRCompact(total)}
           </span>

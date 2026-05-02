@@ -13,7 +13,6 @@ import {
   Cell,
   LabelList,
   ReferenceArea,
-  TooltipProps,
 } from "recharts";
 import { formatINRCompact } from "@/lib/utils";
 
@@ -46,7 +45,19 @@ type ChartEntry = {
   GNPAPct: number | null;
 };
 
-function CustomTooltip({ active, payload, label }: TooltipProps<number, string>) {
+interface TooltipPayloadItem {
+  name: string;
+  value: number;
+  color: string;
+}
+
+interface CustomTooltipProps {
+  active?: boolean;
+  payload?: TooltipPayloadItem[];
+  label?: string;
+}
+
+function CustomTooltip({ active, payload, label }: CustomTooltipProps) {
   if (!active || !payload || payload.length === 0) return null;
   return (
     <div
@@ -64,19 +75,26 @@ function CustomTooltip({ active, payload, label }: TooltipProps<number, string>)
         const isPercent =
           entry.name === "CollectionEfficiency" || entry.name === "GNPAPct";
         const formatted = isPercent
-          ? `${(entry.value as number).toFixed(1)}%`
-          : formatINRCompact(entry.value as number);
+          ? `${entry.value.toFixed(1)}%`
+          : formatINRCompact(entry.value);
+        const displayName =
+          entry.name === "CollectionEfficiency"
+            ? "Coll. Efficiency"
+            : entry.name === "GNPAPct"
+            ? "GNPA %"
+            : entry.name === "MTDDisbursement"
+            ? "MTD Disb."
+            : entry.name;
         return (
-          <div key={entry.name} style={{ display: "flex", justifyContent: "space-between", gap: "16px", color: entry.color }}>
-            <span style={{ color: "#94A3B8" }}>
-              {entry.name === "CollectionEfficiency"
-                ? "Coll. Efficiency"
-                : entry.name === "GNPAPct"
-                ? "GNPA %"
-                : entry.name === "MTDDisbursement"
-                ? "MTD Disb."
-                : entry.name}
-            </span>
+          <div
+            key={entry.name}
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              gap: "16px",
+            }}
+          >
+            <span style={{ color: "#94A3B8" }}>{displayName}</span>
             <span style={{ fontWeight: 600, color: entry.color }}>{formatted}</span>
           </div>
         );
@@ -160,7 +178,10 @@ export default function BranchComparisonChart({ branches }: Props) {
               />
             )}
 
-            <Tooltip content={<CustomTooltip />} cursor={{ fill: "rgba(255,255,255,0.04)" }} />
+            <Tooltip
+              content={<CustomTooltip />}
+              cursor={{ fill: "rgba(255,255,255,0.04)" }}
+            />
             <Legend wrapperStyle={{ paddingTop: "16px", fontSize: "12px" }} />
 
             {view === "aum" && (
@@ -181,9 +202,9 @@ export default function BranchComparisonChart({ branches }: Props) {
                 <Bar
                   dataKey="MTDDisbursement"
                   name="MTDDisbursement"
+                  fill="#16A34A"
                   radius={[4, 4, 0, 0]}
                   maxBarSize={36}
-                  fill="#16A34A"
                   isAnimationActive={true}
                   animationDuration={600}
                   animationEasing="ease-out"
@@ -193,12 +214,7 @@ export default function BranchComparisonChart({ branches }: Props) {
 
             {view === "risk" && (
               <>
-                <ReferenceArea
-                  y1={0}
-                  y2={undefined}
-                  fill="#DC262610"
-                  ifOverflow="extendDomain"
-                />
+                <ReferenceArea y1={0} fill="#DC262610" ifOverflow="extendDomain" />
                 <Bar
                   dataKey="Collection"
                   name="Collection"
