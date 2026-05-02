@@ -13,7 +13,7 @@ export async function POST(req: Request) {
 
     const user = auth.user!;
     const formData = await req.formData();
-    const file = formData.get("file") as File;
+    const file   = formData.get("file")   as File;
     const branch = formData.get("branch") as string;
 
     if (!file || !branch) {
@@ -29,17 +29,17 @@ export async function POST(req: Request) {
     }
 
     const fileName = file.name.toLowerCase();
-    const isExcel = fileName.endsWith(".xlsx") || fileName.endsWith(".xls");
-    const isHtml = fileName.endsWith(".html") || fileName.endsWith(".htm");
+    const isExcel  = fileName.endsWith(".xlsx") || fileName.endsWith(".xls");
+    const isHtml   = fileName.endsWith(".html") || fileName.endsWith(".htm");
 
     if (!isExcel && !isHtml) {
       return errorResponse("Only Excel and HTML files are allowed", 400);
     }
 
     const arrayBuffer = await file.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
+    const buffer      = Buffer.from(arrayBuffer);
 
-    let parsedData: any = null;
+    let parsedData: any;
 
     if (isExcel) {
       parsedData = await parseExcelBuffer(arrayBuffer, branch as BranchName);
@@ -51,23 +51,49 @@ export async function POST(req: Request) {
       }
     }
 
+    // Determine a human-friendly label for the report type so the UI can show it.
+    let reportTypeLabel: string | undefined;
+    if (parsedData.fileType === "TRANSACTION") {
+      reportTypeLabel = "Transaction Statement (Interest Extract)";
+    } else if (parsedData.fileType === "LOAN_BALANCE") {
+      reportTypeLabel = "Loan Balance Statement";
+    }
+
     return successResponse({
-      closingBalance: parsedData.closingBalance ?? 0,
-      disbursement: parsedData.disbursement ?? 0,
-      collection: parsedData.collection ?? 0,
-      npa: parsedData.npa ?? 0,
-      totalAccounts: parsedData.totalAccounts ?? null,
-      dpdBuckets: parsedData.dpdBuckets ?? null,
+      // Core fields always present
+      closingBalance:  parsedData.closingBalance  ?? 0,
+      disbursement:    parsedData.disbursement    ?? 0,
+      collection:      parsedData.collection      ?? 0,
+      npa:             parsedData.npa             ?? 0,
+      totalAccounts:   parsedData.totalAccounts   ?? null,
+      totalCustomers:  parsedData.totalCustomers  ?? null,
+      dpdBuckets:      parsedData.dpdBuckets      ?? null,
       reportDateRange: parsedData.reportDateRange ?? null,
-      fileType: isExcel ? "EXCEL" : "HTML",
-      fileName: file.name,
+      // Gold Loan extended fields
+      goldPledgedGrams:    parsedData.goldPledgedGrams    ?? null,
+      avgYield:            parsedData.avgYield            ?? null,
+      principalCollection: parsedData.principalCollection ?? null,
+      interestCollection:  parsedData.interestCollection  ?? null,
+      ftdDisbursement:     parsedData.ftdDisbursement     ?? null,
+      mtdDisbursement:     parsedData.mtdDisbursement     ?? null,
+      ytdDisbursement:     parsedData.ytdDisbursement     ?? null,
+      gnpaAmount:          parsedData.gnpaAmount          ?? null,
+      gnpaPct:             parsedData.gnpaPct             ?? null,
+      overdueAmount:       parsedData.overdueAmount       ?? null,
+      overduePct:          parsedData.overduePct          ?? null,
+      // Meta
+      fileType:        isExcel ? "EXCEL" : "HTML",
+      reportType:      parsedData.fileType,
+      reportTypeLabel,
+      fileName:        file.name,
       branch,
     });
   } catch (error: any) {
     console.error("Preview error:", error);
     if (
       error?.message?.includes("Unrecognized Excel format") ||
-      error?.message?.includes("header row")
+      error?.message?.includes("header row") ||
+      error?.message?.includes("Could not find")
     ) {
       return errorResponse(error.message, 422);
     }
