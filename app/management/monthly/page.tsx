@@ -5,6 +5,7 @@ import { Loader2, RefreshCcw, CalendarDays, TrendingUp, TrendingDown, Minus, Dow
 import { format } from "date-fns";
 import KPICard from "@/components/management/KPICard";
 import BranchComparisonChart from "@/components/management/BranchComparisonChart";
+import PortfolioMixChart from "@/components/management/PortfolioMixChart";
 import { formatINRCompact } from "@/lib/utils";
 
 export default function MonthlyDashboardPage() {
@@ -55,7 +56,6 @@ export default function MonthlyDashboardPage() {
         </div>
 
         <div className="mt-4 md:mt-0 text-left md:text-right flex flex-col items-start md:items-end gap-3">
-          {/* Export button */}
           <button
             onClick={() => window.open(`/api/export/monthly?month=${data.monthKey}`)}
             className="flex items-center gap-1.5 bg-elevated hover:bg-border border border-border text-text-primary text-sm px-3 py-1.5 rounded-lg transition-colors"
@@ -94,10 +94,15 @@ export default function MonthlyDashboardPage() {
             <KPICard label="Monthly NPA" value={data.totals.npa} colorClass="bg-red-500" />
           </div>
 
-          <div className="bg-surface border border-border rounded-xl p-6">
-            <h3 className="text-lg font-medium text-text-primary mb-6">Branch Comparison (Monthly)</h3>
-            <div className="h-[400px]">
+          {/* Charts grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="bg-surface border border-border rounded-xl p-6">
+              <h3 className="text-lg font-medium text-text-primary mb-6">Branch Comparison (Monthly)</h3>
               <BranchComparisonChart branches={data.branches} />
+            </div>
+            <div className="bg-surface border border-border rounded-xl p-6">
+              <h3 className="text-lg font-medium text-text-primary mb-6">Portfolio Mix</h3>
+              <PortfolioMixChart branches={data.branches} />
             </div>
           </div>
 
