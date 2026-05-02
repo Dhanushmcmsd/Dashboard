@@ -29,20 +29,22 @@ function AumDrawerContent({ data }: { data: DailyDashboardData }) {
   return (
     <div className="space-y-4">
       <div className="overflow-x-auto">
-        <table className="w-full text-sm">
+        <table className="w-full">
           <thead>
             <tr className="border-b border-[#c8e6c0]">
-              <th className="text-left py-2 pr-4 text-xs text-[#4a7c5f] uppercase tracking-wider">Branch</th>
-              <th className="text-right py-2 pr-4 text-xs text-[#4a7c5f] uppercase tracking-wider">AUM</th>
-              <th className="text-right py-2 text-xs text-[#4a7c5f] uppercase tracking-wider">% Share</th>
+              <th className="text-left py-4 px-4 text-xs text-[#4a7c5f] uppercase tracking-widest font-semibold">Branch</th>
+              <th className="text-right py-4 px-4 text-xs text-[#4a7c5f] uppercase tracking-widest font-semibold">AUM</th>
+              <th className="text-right py-4 px-4 text-xs text-[#4a7c5f] uppercase tracking-widest font-semibold">% Share</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-[#c8e6c0]">
+          <tbody className="divide-y divide-[#f0fce8]">
             {data.branches.map((b) => (
-              <tr key={b.branch} className="hover:bg-[#f0faf4]">
-                <td className="py-3 pr-4 font-medium text-[#064734]">{b.branch}</td>
-                <td className="py-3 pr-4 text-right tabular-nums">{formatINRCompact(b.closingBalance)}</td>
-                <td className="py-3 text-right text-[#4a7c5f] tabular-nums">
+              <tr key={b.branch} className="hover:bg-[#f7fff0] transition-colors duration-150 group">
+                <td className="py-4 px-4 font-medium text-[#064734]">{b.branch}</td>
+                <td className="py-4 px-4 text-right tabular-nums text-[#064734] font-semibold">
+                  {formatINRCompact(b.closingBalance)}
+                </td>
+                <td className="py-4 px-4 text-right tabular-nums text-[#4a7c5f]">
                   {data.totals.closingBalance > 0
                     ? `${((b.closingBalance / data.totals.closingBalance) * 100).toFixed(1)}%`
                     : "\u2014"}
@@ -383,43 +385,75 @@ export default function DailyDashboardPage() {
             )}
           </div>
 
-          {/* ── Branch Breakdown Table ── */}
-          <div className="bg-white border border-[#c8e6c0] rounded-3xl overflow-hidden shadow-sm animate-fade-up-delay-4">
-            <div className="p-6 border-b border-[#c8e6c0]">
-              <h3 className="text-base font-semibold text-[#064734]">Branch Breakdown</h3>
+          {/* ── Branch Breakdown Table — Ascone-style minimal ── */}
+          <div className="bg-white border border-[#c8e6c0] rounded-3xl overflow-hidden shadow-[0_4px_24px_rgba(6,71,52,0.08)] animate-fade-up-delay-4">
+            <div className="px-6 py-5 border-b border-[#c8e6c0]">
+              <h3 className="text-sm font-semibold text-[#064734] tracking-wide">Branch Breakdown</h3>
             </div>
             <div className="overflow-x-auto">
-              <table className="w-full text-sm text-left">
-                <thead className="text-xs text-[#4a7c5f] uppercase bg-[#f0faf4] border-b border-[#c8e6c0]">
-                  <tr>
-                    <th className="px-6 py-4">Branch</th>
-                    <th className="px-6 py-4 text-right">Closing Balance</th>
-                    <th className="px-6 py-4 text-right">Disbursement</th>
-                    <th className="px-6 py-4 text-right">Collection</th>
-                    <th className="px-6 py-4 text-right">NPA</th>
-                    <th className="px-6 py-4 text-right">Uploaded At</th>
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-[#c8e6c0]">
+                    <th className="text-left py-4 px-6 text-xs text-[#4a7c5f] uppercase tracking-widest font-semibold">
+                      Branch
+                    </th>
+                    <th className="text-right py-4 px-6 text-xs text-[#4a7c5f] uppercase tracking-widest font-semibold">
+                      Closing Balance
+                    </th>
+                    <th className="text-right py-4 px-6 text-xs text-[#4a7c5f] uppercase tracking-widest font-semibold">
+                      Disbursement
+                    </th>
+                    <th className="text-right py-4 px-6 text-xs text-[#4a7c5f] uppercase tracking-widest font-semibold">
+                      Collection
+                    </th>
+                    <th className="text-right py-4 px-6 text-xs text-[#4a7c5f] uppercase tracking-widest font-semibold">
+                      NPA
+                    </th>
+                    <th className="text-right py-4 px-6 text-xs text-[#4a7c5f] uppercase tracking-widest font-semibold">
+                      Uploaded At
+                    </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-[#c8e6c0]">
+                <tbody className="divide-y divide-[#f0fce8]">
                   {data.branches.map((b) => (
-                    <tr key={b.branch} className="hover:bg-[#f0faf4] transition-colors">
-                      <td className="px-6 py-4 font-medium text-[#064734]">{b.branch}</td>
-                      <td className="px-6 py-4 text-right tabular-nums">{formatINRCompact(b.closingBalance)}</td>
-                      <td className="px-6 py-4 text-right tabular-nums">{formatINRCompact(b.disbursement)}</td>
-                      <td className="px-6 py-4 text-right tabular-nums">{formatINRCompact(b.collection)}</td>
-                      <td className="px-6 py-4 text-right text-[#991b1b] tabular-nums">{formatINRCompact(b.npa)}</td>
-                      <td className="px-6 py-4 text-right text-[#4a7c5f] text-xs">
+                    <tr
+                      key={b.branch}
+                      className="hover:bg-[#f7fff0] transition-colors duration-150 group"
+                    >
+                      <td className="py-4 px-6 font-medium text-[#064734]">{b.branch}</td>
+                      <td className="py-4 px-6 text-right tabular-nums text-[#064734] font-semibold">
+                        {formatINRCompact(b.closingBalance)}
+                      </td>
+                      <td className="py-4 px-6 text-right tabular-nums text-[#064734]">
+                        {formatINRCompact(b.disbursement)}
+                      </td>
+                      <td className="py-4 px-6 text-right tabular-nums text-[#064734]">
+                        {formatINRCompact(b.collection)}
+                      </td>
+                      <td className="py-4 px-6 text-right tabular-nums text-[#991b1b]">
+                        {formatINRCompact(b.npa)}
+                      </td>
+                      <td className="py-4 px-6 text-right text-[#4a7c5f] text-xs">
                         {format(new Date(b.uploadedAt), "h:mm a")}
                       </td>
                     </tr>
                   ))}
-                  <tr className="bg-[#f0faf4] font-semibold text-[#064734] border-t-2 border-[#c8e6c0]">
-                    <td className="px-6 py-4">Total</td>
-                    <td className="px-6 py-4 text-right text-[#064734] tabular-nums">{formatINRCompact(data.totals.closingBalance)}</td>
-                    <td className="px-6 py-4 text-right text-[#0a7c5c] tabular-nums">{formatINRCompact(data.totals.disbursement)}</td>
-                    <td className="px-6 py-4 text-right text-[#4aaa6f] tabular-nums">{formatINRCompact(data.totals.collection)}</td>
-                    <td className="px-6 py-4 text-right text-[#991b1b] tabular-nums">{formatINRCompact(data.totals.npa)}</td>
-                    <td className="px-6 py-4 text-right text-[#4a7c5f] text-xs">\u2014</td>
+                  {/* Totals row */}
+                  <tr className="bg-[#f0fce8] border-t-2 border-[#c8e6c0]">
+                    <td className="py-4 px-6 font-bold text-[#064734] text-sm">Total</td>
+                    <td className="py-4 px-6 text-right tabular-nums text-[#064734] font-bold">
+                      {formatINRCompact(data.totals.closingBalance)}
+                    </td>
+                    <td className="py-4 px-6 text-right tabular-nums text-[#0a7c5c] font-semibold">
+                      {formatINRCompact(data.totals.disbursement)}
+                    </td>
+                    <td className="py-4 px-6 text-right tabular-nums text-[#4aaa6f] font-semibold">
+                      {formatINRCompact(data.totals.collection)}
+                    </td>
+                    <td className="py-4 px-6 text-right tabular-nums text-[#991b1b] font-semibold">
+                      {formatINRCompact(data.totals.npa)}
+                    </td>
+                    <td className="py-4 px-6 text-right text-[#4a7c5f] text-xs">\u2014</td>
                   </tr>
                 </tbody>
               </table>
