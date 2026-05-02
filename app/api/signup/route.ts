@@ -37,9 +37,14 @@ export async function POST(req: Request) {
       },
     });
 
-    await sendWelcomeEmail(user.email, user.name);
+    // Send welcome email — non-fatal if it fails
+    try {
+      await sendWelcomeEmail(user.email, user.name);
+    } catch (emailError) {
+      console.error("Welcome email failed (non-fatal):", emailError);
+    }
 
-    return successResponse({ registered: true }, 201);
+    return NextResponse.json({ success: true, registered: true }, { status: 201 });
   } catch (error) {
     console.error("Signup error:", error);
     return errorResponse("Internal server error", 500);
