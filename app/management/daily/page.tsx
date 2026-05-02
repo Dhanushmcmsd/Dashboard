@@ -174,7 +174,7 @@ export default function DailyDashboardPage() {
   // AUM growth placeholder — wire to real trend API when available
   const aumGrowth = 0;
 
-  // collectionHistory: empty array until a trend API is wired; chart handles this gracefully
+  // collectionHistory: empty array until a trend API is wired
   const collectionHistory: { date: string; efficiency: number; overdueBalance: number }[] = [];
 
   // Portfolio mix data for pie chart
@@ -186,12 +186,12 @@ export default function DailyDashboardPage() {
   return (
     <div className="space-y-8">
 
-      {/* ── Hero Stats Bento Grid ── */}
+      {/* ── Hero Stats Bento Grid (staggered fade-up entrance) ── */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
 
-        {/* Large AUM tile — spans 2 cols */}
+        {/* Large AUM tile — spans 2 cols, delay-1 */}
         <div
-          className="col-span-2 bg-[#064734] text-white rounded-3xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 cursor-pointer"
+          className="col-span-2 bg-[#064734] text-white rounded-3xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 cursor-pointer animate-fade-up-delay-1"
           onClick={() =>
             openDrawer("Total AUM Breakdown", `As of ${data.dateKey}`, <AumDrawerContent data={data} />)
           }
@@ -200,7 +200,7 @@ export default function DailyDashboardPage() {
             <p className="text-[#a8d5b5] text-xs uppercase tracking-widest font-medium">Total AUM</p>
             <Landmark className="w-4 h-4 text-[#a8d5b5]" />
           </div>
-          <h1 className="text-4xl md:text-5xl font-bold mt-2 tabular-nums">
+          <h1 className="text-4xl md:text-5xl font-bold mt-2 tabular-nums animate-count-up">
             ₹{formatINRCompact(data.totals.closingBalance)}
           </h1>
           <div className="flex items-center gap-3 mt-4">
@@ -221,9 +221,9 @@ export default function DailyDashboardPage() {
           </div>
         </div>
 
-        {/* Disbursement tile */}
+        {/* Disbursement tile — delay-2 */}
         <div
-          className="bg-white border border-[#c8e6c0] rounded-3xl p-6 hover:border-[#064734] transition-all duration-300 hover:-translate-y-1 cursor-pointer"
+          className="bg-white border border-[#c8e6c0] rounded-3xl p-6 hover:border-[#064734] transition-all duration-300 hover:-translate-y-1 cursor-pointer animate-fade-up-delay-2"
           onClick={() =>
             openDrawer(
               "Disbursement \u2014 FTD / MTD / YTD",
@@ -236,19 +236,19 @@ export default function DailyDashboardPage() {
             <p className="text-[#4a7c5f] text-xs uppercase tracking-wider font-medium">Disbursement</p>
             <TrendingUp className="w-4 h-4 text-[#4a7c5f]" />
           </div>
-          <p className="text-2xl font-bold text-[#064734] mt-2 tabular-nums">
+          <p className="text-2xl font-bold text-[#064734] mt-2 tabular-nums animate-count-up">
             ₹{formatINRCompact(data.totals.disbursement)}
           </p>
           <p className="text-[#4a7c5f] text-xs mt-2">MTD disbursement</p>
         </div>
 
-        {/* Collection tile */}
-        <div className="bg-white border border-[#c8e6c0] rounded-3xl p-6 hover:border-[#064734] transition-all duration-300 hover:-translate-y-1">
+        {/* Collection tile — delay-3 */}
+        <div className="bg-white border border-[#c8e6c0] rounded-3xl p-6 hover:border-[#064734] transition-all duration-300 hover:-translate-y-1 animate-fade-up-delay-3">
           <div className="flex items-center justify-between mb-1">
             <p className="text-[#4a7c5f] text-xs uppercase tracking-wider font-medium">Collection</p>
             <Banknote className="w-4 h-4 text-[#4a7c5f]" />
           </div>
-          <p className="text-2xl font-bold text-[#064734] mt-2 tabular-nums">
+          <p className="text-2xl font-bold text-[#064734] mt-2 tabular-nums animate-count-up">
             ₹{formatINRCompact(data.totals.collection)}
           </p>
           {collEff > 0 && (
@@ -256,9 +256,9 @@ export default function DailyDashboardPage() {
           )}
         </div>
 
-        {/* NPA tile — full width on mobile, 2 cols on md+ to balance the row */}
+        {/* NPA tile — delay-4 */}
         <div
-          className="col-span-2 md:col-span-2 bg-white border border-[#c8e6c0] rounded-3xl p-6 hover:border-[#064734] transition-all duration-300 hover:-translate-y-1 cursor-pointer"
+          className="col-span-2 bg-white border border-[#c8e6c0] rounded-3xl p-6 hover:border-[#064734] transition-all duration-300 hover:-translate-y-1 cursor-pointer animate-fade-up-delay-4"
           onClick={() =>
             openDrawer(
               "NPA & Overdue Detail",
@@ -276,14 +276,14 @@ export default function DailyDashboardPage() {
             <p className="text-[#4a7c5f] text-xs uppercase tracking-wider font-medium">NPA</p>
             <AlertTriangle className="w-4 h-4 text-[#991b1b]" />
           </div>
-          <p className="text-2xl font-bold text-[#991b1b] mt-2 tabular-nums">
+          <p className="text-2xl font-bold text-[#991b1b] mt-2 tabular-nums animate-count-up">
             ₹{formatINRCompact(data.totals.npa)}
           </p>
           <p className="text-[#4a7c5f] text-xs mt-2">{gnpaPct.toFixed(2)}% of AUM</p>
         </div>
 
         {/* Date / controls tile */}
-        <div className="col-span-2 bg-white border border-[#c8e6c0] rounded-3xl p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="col-span-2 bg-white border border-[#c8e6c0] rounded-3xl p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 animate-fade-up-delay-4">
           <div>
             <p className="text-[#4a7c5f] text-xs uppercase tracking-wider font-medium mb-1">Viewing Period</p>
             {isViewingPast ? (
@@ -353,38 +353,38 @@ export default function DailyDashboardPage() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
             {/* Branch Comparison — 2 cols */}
-            <div className="lg:col-span-2 bg-white border border-[#c8e6c0] rounded-3xl p-6 shadow-sm hover:shadow-md transition-shadow duration-300">
+            <div className="lg:col-span-2 bg-white border border-[#c8e6c0] rounded-3xl p-6 shadow-sm hover:shadow-md transition-shadow duration-300 animate-fade-up-delay-1">
               <h3 className="text-xs font-semibold text-[#4a7c5f] uppercase tracking-wider mb-5">Branch Performance</h3>
               <BranchComparisonChart branches={data.branches} />
             </div>
 
             {/* DPD Buckets */}
-            <div className="bg-white border border-[#c8e6c0] rounded-3xl p-6 shadow-sm hover:shadow-md transition-shadow duration-300">
+            <div className="bg-white border border-[#c8e6c0] rounded-3xl p-6 shadow-sm hover:shadow-md transition-shadow duration-300 animate-fade-up-delay-2">
               <h3 className="text-xs font-semibold text-[#4a7c5f] uppercase tracking-wider mb-5">DPD Bucket Distribution</h3>
               <DpdBucketChart data={dpdArray} />
             </div>
 
             {/* Portfolio Mix Pie */}
-            <div className="bg-white border border-[#c8e6c0] rounded-3xl p-6 shadow-sm hover:shadow-md transition-shadow duration-300">
+            <div className="bg-white border border-[#c8e6c0] rounded-3xl p-6 shadow-sm hover:shadow-md transition-shadow duration-300 animate-fade-up-delay-3">
               <h3 className="text-xs font-semibold text-[#4a7c5f] uppercase tracking-wider mb-5">Portfolio Mix</h3>
               <PortfolioMixChart data={portfolioData} />
             </div>
 
             {/* Collection Efficiency — 2 cols */}
             {collectionHistory.length > 0 ? (
-              <div className="lg:col-span-2 bg-white border border-[#c8e6c0] rounded-3xl p-6 shadow-sm hover:shadow-md transition-shadow duration-300">
+              <div className="lg:col-span-2 bg-white border border-[#c8e6c0] rounded-3xl p-6 shadow-sm hover:shadow-md transition-shadow duration-300 animate-fade-up-delay-4">
                 <h3 className="text-xs font-semibold text-[#4a7c5f] uppercase tracking-wider mb-5">Collection Efficiency Trend</h3>
                 <CollectionEfficiencyChart data={collectionHistory} />
               </div>
             ) : (
-              <div className="lg:col-span-2 bg-white border border-[#c8e6c0] rounded-3xl p-6 shadow-sm flex items-center justify-center">
+              <div className="lg:col-span-2 bg-white border border-[#c8e6c0] rounded-3xl p-6 shadow-sm flex items-center justify-center animate-fade-up-delay-4">
                 <p className="text-[#4a7c5f] text-sm">Collection trend data will appear here once history is available.</p>
               </div>
             )}
           </div>
 
           {/* ── Branch Breakdown Table ── */}
-          <div className="bg-white border border-[#c8e6c0] rounded-3xl overflow-hidden shadow-sm">
+          <div className="bg-white border border-[#c8e6c0] rounded-3xl overflow-hidden shadow-sm animate-fade-up-delay-4">
             <div className="p-6 border-b border-[#c8e6c0]">
               <h3 className="text-base font-semibold text-[#064734]">Branch Breakdown</h3>
             </div>

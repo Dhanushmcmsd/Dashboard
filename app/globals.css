@@ -52,7 +52,7 @@ body {
   color: #064734;
 }
 
-/* ── Scrollbar ─────────────────────────────────────────── */
+/* ── Scrollbar ────────────────────────────────────────────── */
 ::-webkit-scrollbar { width: 5px; height: 5px; }
 ::-webkit-scrollbar-track { background: #f7fff0; }
 ::-webkit-scrollbar-thumb { background: #c8e6c0; border-radius: 3px; }
@@ -104,7 +104,7 @@ body {
   pointer-events: none;
 }
 
-/* ── Buttons ───────────────────────────────────────────── */
+/* ── Buttons ─────────────────────────────────────────────── */
 .btn-primary {
   background-color: #064734;
   color: #ffffff;
@@ -156,7 +156,7 @@ body {
   background: #f0fce8;
 }
 
-/* ── Inputs ────────────────────────────────────────────── */
+/* ── Inputs ─────────────────────────────────────────────── */
 .input-dark {
   background: #ffffff;
   border: 1.5px solid #c8e6c0;
@@ -174,7 +174,7 @@ body {
 }
 .input-dark::placeholder { color: #4a7c5f; opacity: 0.6; }
 
-/* ── Danger card ───────────────────────────────────────── */
+/* ── Danger card ───────────────────────────────────────────── */
 .danger-card {
   background: #fff5f5;
   border: 1.5px solid rgba(153,27,27,0.25);
@@ -184,7 +184,7 @@ body {
   overflow: hidden;
 }
 
-/* ── Sidebar active ────────────────────────────────────── */
+/* ── Sidebar active ──────────────────────────────────────────── */
 .sidebar-active {
   background: #E0FFC2;
   color: #064734;
@@ -192,14 +192,14 @@ body {
   border-radius: 0.75rem;
 }
 
-/* ── Pulse dot ─────────────────────────────────────────── */
+/* ── Pulse dot ─────────────────────────────────────────────── */
 @keyframes pulse-dot {
   0%, 100% { opacity: 1; }
   50%       { opacity: 0.35; }
 }
 .pulse-dot { animation: pulse-dot 2s ease-in-out infinite; }
 
-/* ── Bar grow animation ─────────────────────────────────── */
+/* ── Bar grow animation ────────────────────────────────────────── */
 @keyframes bar-grow {
   from { transform: scaleY(0); opacity: 0; }
   to   { transform: scaleY(1); opacity: 1; }
@@ -209,7 +209,94 @@ body {
   animation: bar-grow 0.35s ease-out forwards;
 }
 
-/* ── Financial table ────────────────────────────────────── */
+/* ── PART 3: Entrance & Loading Animations ───────────────────────── */
+
+/* Fade-up entrance for cards */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Shimmer for loading skeletons */
+@keyframes shimmer {
+  0%   { background-position: -200% center; }
+  100% { background-position:  200% center; }
+}
+
+/* Pulse glow for uploaded branch pills */
+@keyframes glowPulse {
+  0%, 100% { box-shadow: 0 0 0 0   rgba(6, 71, 52, 0.3); }
+  50%       { box-shadow: 0 0 0 8px rgba(6, 71, 52, 0); }
+}
+
+/* Number count-up entrance */
+@keyframes countUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ─ Base fade-up class ─ */
+.animate-fade-up {
+  animation: fadeInUp 0.5s ease-out forwards;
+}
+
+/* ─ Staggered delay variants (start hidden, reveal in sequence) ─ */
+.animate-fade-up-delay-1 {
+  opacity: 0;
+  animation: fadeInUp 0.5s ease-out 0.1s forwards;
+}
+.animate-fade-up-delay-2 {
+  opacity: 0;
+  animation: fadeInUp 0.5s ease-out 0.2s forwards;
+}
+.animate-fade-up-delay-3 {
+  opacity: 0;
+  animation: fadeInUp 0.5s ease-out 0.3s forwards;
+}
+.animate-fade-up-delay-4 {
+  opacity: 0;
+  animation: fadeInUp 0.5s ease-out 0.4s forwards;
+}
+
+/* ─ Skeleton shimmer ─ */
+.skeleton-shimmer {
+  background: linear-gradient(90deg, #f0fce8 25%, #d4f5a8 50%, #f0fce8 75%);
+  background-size: 200% auto;
+  animation: shimmer 1.5s linear infinite;
+}
+
+/* ─ Glow pulse for uploaded branch pills ─ */
+.glow-pulse {
+  animation: glowPulse 2s ease-in-out infinite;
+}
+
+/* ─ Count-up number entrance ─ */
+.animate-count-up {
+  animation: countUp 0.4s ease-out forwards;
+}
+
+/* ─ Respect reduced-motion preference ─ */
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-up,
+  .animate-fade-up-delay-1,
+  .animate-fade-up-delay-2,
+  .animate-fade-up-delay-3,
+  .animate-fade-up-delay-4,
+  .animate-count-up {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+  .skeleton-shimmer {
+    animation: none;
+    background: #f0fce8;
+  }
+  .glow-pulse {
+    animation: none;
+  }
+}
+
+/* ── Financial table ────────────────────────────────────────────── */
 .dark-table {
   width: 100%;
   border-collapse: collapse;
@@ -252,7 +339,7 @@ body {
   font-variant-numeric: normal;
 }
 
-/* ── Role badges ────────────────────────────────────────── */
+/* ── Role badges ────────────────────────────────────────────── */
 .badge-admin {
   background: rgba(153,27,27,0.10);
   color: #991b1b;
@@ -287,7 +374,7 @@ body {
   letter-spacing: 0.05em;
 }
 
-/* ── Status badges ──────────────────────────────────────── */
+/* ── Status badges ────────────────────────────────────────────── */
 .badge-success {
   background: #E0FFC2;
   color: #064734;
@@ -316,7 +403,7 @@ body {
   border-radius: 9999px;
 }
 
-/* ── Typography helpers ─────────────────────────────────── */
+/* ── Typography helpers ───────────────────────────────────────────── */
 .page-title {
   font-size: 1.5rem;
   font-weight: 700;
@@ -339,12 +426,12 @@ body {
   color: #064734;
 }
 
-/* ── Mint glow on hover ─────────────────────────────────── */
+/* ── Mint glow on hover ────────────────────────────────────────── */
 .mint-glow:hover {
   box-shadow: 0 0 20px rgba(224, 255, 194, 0.6);
 }
 
-/* ── Print utilities ────────────────────────────────────── */
+/* ── Print utilities ────────────────────────────────────────────── */
 @media print {
   .print\:hidden { display: none !important; }
   .print\:block  { display: block  !important; }

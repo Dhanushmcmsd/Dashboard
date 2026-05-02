@@ -18,7 +18,7 @@ export default function BranchUploadStatus({ uploadedBranches, missingBranches }
             className={cn(
               "flex items-center gap-2 px-4 py-2 rounded-full border-2 whitespace-nowrap transition-all duration-200 select-none text-sm font-medium",
               isUploaded
-                ? "bg-[#064734] text-white border-[#064734] shadow-sm"
+                ? "bg-[#064734] text-white border-[#064734] shadow-sm glow-pulse"
                 : "bg-white text-[#4a7c5f] border-[#c8e6c0] hover:border-[#064734]"
             )}
           >
