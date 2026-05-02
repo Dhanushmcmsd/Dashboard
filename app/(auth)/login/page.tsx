@@ -4,19 +4,35 @@ import { useState, Suspense } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { Loader2, Mail, Lock, ArrowRight, CheckCircle2, AlertCircle, Eye, EyeOff } from "lucide-react";
+import {
+  Loader2, Mail, Lock, ArrowRight,
+  CheckCircle2, AlertCircle, Eye, EyeOff,
+} from "lucide-react";
 import Image from "next/image";
+
+// ── Decorative sparkle SVG (Ascone-style ✦) ──────────────────────────────────
+function Sparkle({ size = 24, className = "" }: { size?: number; className?: string }) {
+  return (
+    <svg
+      width={size} height={size} viewBox="0 0 24 24"
+      fill="currentColor" className={className}
+      aria-hidden="true"
+    >
+      <path d="M12 0 C12 6.627 6.627 12 0 12 C6.627 12 12 17.373 12 24 C12 17.373 17.373 12 24 12 C17.373 12 12 6.627 12 0Z" />
+    </svg>
+  );
+}
 
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const msg = searchParams.get("msg");
 
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [email, setEmail]               = useState("");
+  const [password, setPassword]         = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [error, setError]               = useState("");
+  const [loading, setLoading]           = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -24,7 +40,7 @@ function LoginForm() {
     setLoading(true);
 
     try {
-      const res = await fetch(`/api/auth/check-email?email=${encodeURIComponent(email)}`);
+      const res  = await fetch(`/api/auth/check-email?email=${encodeURIComponent(email)}`);
       const data = await res.json();
 
       if (!data.success || !data.data.exists) {
@@ -46,7 +62,11 @@ function LoginForm() {
       const result = await signIn("credentials", { redirect: false, email, password });
 
       if (result?.error) {
-        setError(result.error === "CredentialsSignin" ? "Incorrect password. Please try again." : result.error);
+        setError(
+          result.error === "CredentialsSignin"
+            ? "Incorrect password. Please try again."
+            : result.error
+        );
       } else if (result?.ok) {
         router.push("/auth/redirect");
       } else {
@@ -59,114 +79,96 @@ function LoginForm() {
     }
   };
 
-  const features = [
-    { label: "Branch Performance Analytics", desc: "Real-time metrics across all branches" },
-    { label: "Gold Loan & AUM Tracking", desc: "Portfolio monitoring at a glance" },
-    { label: "Automated Alerts", desc: "Stay ahead of key thresholds" },
-  ];
-
   return (
-    <div className="min-h-screen flex" style={{ background: "#07090F" }}>
+    <div className="min-h-screen flex bg-[#f7fff0]">
 
-      {/* ─── Left brand panel ─── */}
-      <div
-        className="hidden lg:flex flex-col w-[480px] shrink-0 relative overflow-hidden"
-        style={{
-          background: "linear-gradient(175deg, #0C1428 0%, #080E1E 50%, #060A16 100%)",
-          borderRight: "1px solid rgba(255,255,255,0.04)",
-        }}
-      >
-        {/* Subtle dot-grid pattern */}
+      {/* ════════════════════════════════════════════════════════════
+          LEFT PANEL — Forest green brand panel (40%)
+      ════════════════════════════════════════════════════════════ */}
+      <div className="hidden lg:flex flex-col w-[40%] shrink-0 bg-[#064734] relative overflow-hidden px-14 py-12">
+
+        {/* Subtle dot-grid texture */}
         <div
           className="absolute inset-0 pointer-events-none"
           style={{
-            backgroundImage: "radial-gradient(circle, rgba(255,255,255,0.025) 1px, transparent 1px)",
-            backgroundSize: "32px 32px",
+            backgroundImage: "radial-gradient(circle, rgba(255,255,255,0.06) 1px, transparent 1px)",
+            backgroundSize: "28px 28px",
           }}
         />
 
-        {/* Top accent line */}
-        <div
-          className="absolute top-0 left-0 right-0 h-[2px]"
-          style={{ background: "linear-gradient(90deg, #1E40AF 0%, #3B82F6 55%, transparent 100%)" }}
-        />
+        {/* Decorative sparkle cluster — top-right */}
+        <div className="absolute top-10 right-10 text-white/20 pointer-events-none flex gap-4">
+          <Sparkle size={40} />
+          <Sparkle size={24} className="mt-6" />
+        </div>
 
-        {/* Content */}
-        <div className="relative flex flex-col h-full px-12 py-12">
+        {/* Decorative sparkle cluster — bottom-left */}
+        <div className="absolute bottom-14 left-10 text-white/15 pointer-events-none flex gap-3 items-end">
+          <Sparkle size={20} className="mb-2" />
+          <Sparkle size={36} />
+        </div>
 
-          {/* Top: small brand badge */}
-          <div className="flex items-center gap-3 mb-auto">
-            <div
-              className="flex items-center justify-center rounded-lg"
-              style={{
-                width: 40,
-                height: 40,
-                background: "rgba(255,255,255,0.05)",
-                border: "1px solid rgba(255,255,255,0.08)",
-              }}
-            >
-              <Image
-                src="/logo.svg"
-                alt="Supra Pacific"
-                width={26}
-                height={26}
-                style={{ objectFit: "contain", borderRadius: 3 }}
-              />
-            </div>
-            <div>
-              <p className="text-white font-semibold" style={{ fontSize: "0.8125rem" }}>Supra Pacific</p>
-              <p style={{ fontSize: "0.625rem", letterSpacing: "0.14em", color: "#3B82F6", textTransform: "uppercase" }}>Management MIS</p>
-            </div>
-          </div>
-
-          {/* Centre: logo + headline */}
-          <div className="flex-1 flex flex-col justify-center py-12">
+        {/* Brand logo + name */}
+        <div className="relative flex items-center gap-3 mb-auto">
+          <div className="w-10 h-10 bg-white/10 border border-white/15 rounded-xl flex items-center justify-center">
             <Image
               src="/logo.svg"
-              alt="Supra Pacific Logo"
-              width={108}
-              height={108}
-              className="mb-9"
+              alt="Supra Pacific"
+              width={26} height={26}
               style={{ objectFit: "contain" }}
             />
-
-            <h1
-              className="font-bold leading-tight mb-4"
-              style={{ fontSize: "1.875rem", color: "#F1F5F9", letterSpacing: "-0.025em" }}
-            >
-              One dashboard.<br />Every insight.
-            </h1>
-            <p className="text-sm leading-relaxed mb-10" style={{ color: "#475569", maxWidth: "28ch" }}>
-              Centralised branch performance and financial analytics — built for Supra Pacific.
-            </p>
-
-            {/* Feature list */}
-            <div className="space-y-5">
-              {features.map((f, i) => (
-                <div key={i} className="flex items-start gap-4">
-                  <div
-                    className="mt-0.5 w-5 h-5 rounded-md flex items-center justify-center shrink-0"
-                    style={{ background: "rgba(59,130,246,0.1)", border: "1px solid rgba(59,130,246,0.18)" }}
-                  >
-                    <div className="w-1.5 h-1.5 rounded-full" style={{ background: "#3B82F6" }} />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium" style={{ color: "#CBD5E1" }}>{f.label}</p>
-                    <p className="mt-0.5" style={{ fontSize: "0.75rem", color: "#334155" }}>{f.desc}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
           </div>
-
-          {/* Footer */}
-          <p style={{ fontSize: "0.6875rem", color: "#1E293B" }}>
-            &copy; {new Date().getFullYear()} Supra Pacific. All rights reserved.
-          </p>
+          <div>
+            <p className="text-white font-semibold text-sm">Supra Pacific</p>
+            <p className="text-[#E0FFC2] text-[10px] uppercase tracking-widest">Management MIS</p>
+          </div>
         </div>
+
+        {/* Centre content */}
+        <div className="relative flex-1 flex flex-col justify-center py-10">
+          {/* Large logo */}
+          <Image
+            src="/logo.svg"
+            alt="Supra Pacific Logo"
+            width={96} height={96}
+            className="mb-10"
+            style={{ objectFit: "contain" }}
+          />
+
+          {/* Tagline */}
+          <h1 className="text-white font-bold text-3xl leading-tight mb-4" style={{ letterSpacing: "-0.025em" }}>
+            Change the way<br />you manage your<br />branches.
+          </h1>
+
+          {/* Subtitle */}
+          <p className="text-[#E0FFC2] text-sm leading-relaxed max-w-[26ch]">
+            Centralised branch performance and financial analytics — built for Supra Pacific.
+          </p>
+
+          {/* Feature pills */}
+          <div className="flex flex-col gap-3 mt-10">
+            {[
+              "Branch Performance Analytics",
+              "Gold Loan & AUM Tracking",
+              "Automated Alerts & Reports",
+            ].map((f) => (
+              <div key={f} className="flex items-center gap-3">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#E0FFC2] shrink-0" />
+                <span className="text-white/80 text-sm">{f}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Footer */}
+        <p className="relative text-white/25 text-[11px]">
+          &copy; {new Date().getFullYear()} Supra Pacific. All rights reserved.
+        </p>
       </div>
 
-      {/* ─── Right form panel ─── */}
+      {/* ════════════════════════════════════════════════════════════
+          RIGHT PANEL — Light mint form panel (60%)
+      ════════════════════════════════════════════════════════════ */}
       <div className="flex-1 flex items-center justify-center px-6 py-12">
         <div className="w-full max-w-[420px]">
 
@@ -175,196 +177,128 @@ function LoginForm() {
             <Image
               src="/logo.svg"
               alt="Supra Pacific"
-              width={36}
-              height={36}
+              width={36} height={36}
               style={{ objectFit: "contain", borderRadius: 4 }}
             />
             <div>
-              <p className="text-white font-semibold" style={{ fontSize: "0.875rem" }}>Supra Pacific</p>
-              <p style={{ fontSize: "0.625rem", letterSpacing: "0.14em", color: "#3B82F6", textTransform: "uppercase" }}>Management MIS</p>
+              <p className="text-[#064734] font-semibold text-sm">Supra Pacific</p>
+              <p className="text-[#4a7c5f] text-[10px] uppercase tracking-widest">Management MIS</p>
             </div>
           </div>
 
-          {/* Heading */}
-          <div className="mb-9">
-            <h2
-              className="font-bold text-white mb-2"
-              style={{ fontSize: "1.625rem", letterSpacing: "-0.02em" }}
-            >
-              Sign in
-            </h2>
-            <p className="text-sm" style={{ color: "#475569" }}>
-              Enter your credentials to access the dashboard
+          {/* White card */}
+          <div className="bg-white rounded-3xl shadow-xl border border-[#c8e6c0] px-8 py-10">
+
+            {/* Heading */}
+            <div className="mb-8">
+              <h2 className="text-[#064734] font-bold text-2xl mb-1" style={{ letterSpacing: "-0.02em" }}>
+                Welcome back
+              </h2>
+              <p className="text-[#4a7c5f] text-sm">
+                Enter your credentials to access the dashboard
+              </p>
+            </div>
+
+            {/* Success banner */}
+            {msg === "password-set" && (
+              <div className="flex items-center gap-3 mb-6 p-4 rounded-2xl text-sm bg-[#f0faf4] border border-[#c8e6c0] text-[#064734]">
+                <CheckCircle2 className="w-4 h-4 shrink-0 text-[#064734]" />
+                <span>Password set successfully. You can now sign in.</span>
+              </div>
+            )}
+
+            {/* Error banner */}
+            {error && (
+              <div className="flex items-center gap-3 mb-6 p-4 rounded-2xl text-sm bg-red-50 border border-red-200 text-[#991b1b]">
+                <AlertCircle className="w-4 h-4 shrink-0" />
+                <span>{error}</span>
+              </div>
+            )}
+
+            {/* Form */}
+            <form onSubmit={handleSubmit} className="space-y-5">
+
+              {/* Email */}
+              <div>
+                <label className="block text-xs font-semibold text-[#4a7c5f] uppercase tracking-wider mb-2">
+                  Email address
+                </label>
+                <div className="relative">
+                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#4a7c5f]" />
+                  <input
+                    type="email"
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="you@suprapacific.com"
+                    autoComplete="email"
+                    className="w-full pl-11 pr-4 py-3.5 rounded-2xl text-sm text-[#064734] bg-white border border-[#c8e6c0] placeholder:text-[#4a7c5f]/50 outline-none transition-all duration-150 focus:border-[#064734] focus:ring-2 focus:ring-[#064734]/12"
+                  />
+                </div>
+              </div>
+
+              {/* Password */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="text-xs font-semibold text-[#4a7c5f] uppercase tracking-wider">
+                    Password
+                  </label>
+                  <Link
+                    href="/forgot-password"
+                    className="text-xs text-[#064734] font-medium hover:underline transition-colors"
+                  >
+                    Forgot password?
+                  </Link>
+                </div>
+                <div className="relative">
+                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#4a7c5f]" />
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    required
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="••••••••"
+                    autoComplete="current-password"
+                    className="w-full pl-11 pr-12 py-3.5 rounded-2xl text-sm text-[#064734] bg-white border border-[#c8e6c0] placeholder:text-[#4a7c5f]/50 outline-none transition-all duration-150 focus:border-[#064734] focus:ring-2 focus:ring-[#064734]/12"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-[#4a7c5f] hover:text-[#064734] transition-colors"
+                    aria-label={showPassword ? "Hide password" : "Show password"}
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+
+              {/* Submit */}
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full flex items-center justify-center gap-2.5 bg-[#064734] hover:bg-[#0a5c43] text-white font-semibold py-3.5 rounded-full text-sm transition-all duration-200 disabled:opacity-50 hover:shadow-lg hover:shadow-[#064734]/25 active:scale-[0.99] mt-2"
+              >
+                {loading ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <>
+                    <span>Sign in to dashboard</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </>
+                )}
+              </button>
+            </form>
+
+            <p className="mt-6 text-center text-xs text-[#4a7c5f]">
+              Don&apos;t have an account?{" "}
+              <Link
+                href="/signup"
+                className="font-semibold text-[#064734] hover:underline transition-colors"
+              >
+                Request access
+              </Link>
             </p>
           </div>
-
-          {/* Success */}
-          {msg === "password-set" && (
-            <div
-              className="flex items-center gap-3 mb-6 p-4 rounded-xl text-sm"
-              style={{
-                background: "rgba(34,197,94,0.06)",
-                border: "1px solid rgba(34,197,94,0.14)",
-                color: "#4ADE80",
-              }}
-            >
-              <CheckCircle2 className="w-4 h-4 shrink-0" />
-              <span>Password set successfully. You can now sign in.</span>
-            </div>
-          )}
-
-          {/* Error */}
-          {error && (
-            <div
-              className="flex items-center gap-3 mb-6 p-4 rounded-xl text-sm"
-              style={{
-                background: "rgba(239,68,68,0.06)",
-                border: "1px solid rgba(239,68,68,0.14)",
-                color: "#F87171",
-              }}
-            >
-              <AlertCircle className="w-4 h-4 shrink-0" />
-              <span>{error}</span>
-            </div>
-          )}
-
-          {/* Form */}
-          <form onSubmit={handleSubmit} className="space-y-5">
-
-            {/* Email */}
-            <div>
-              <label
-                className="block font-medium mb-2"
-                style={{ fontSize: "0.75rem", color: "#64748B", letterSpacing: "0.03em" }}
-              >
-                Email address
-              </label>
-              <div className="relative">
-                <Mail
-                  className="absolute left-4 top-1/2 -translate-y-1/2 w-[15px] h-[15px]"
-                  style={{ color: "#2D3F5C" }}
-                />
-                <input
-                  type="email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="you@suprapacific.com"
-                  autoComplete="email"
-                  className="w-full pl-11 pr-4 rounded-xl text-sm text-white placeholder-[#1E2D40] outline-none"
-                  style={{
-                    background: "#0D1626",
-                    border: "1px solid #162035",
-                    padding: "14px 16px 14px 44px",
-                    transition: "border-color 0.15s, box-shadow 0.15s",
-                  }}
-                  onFocus={(e) => {
-                    e.target.style.borderColor = "#2563EB";
-                    e.target.style.boxShadow = "0 0 0 3px rgba(37,99,235,0.1)";
-                  }}
-                  onBlur={(e) => {
-                    e.target.style.borderColor = "#162035";
-                    e.target.style.boxShadow = "none";
-                  }}
-                />
-              </div>
-            </div>
-
-            {/* Password */}
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <label
-                  className="font-medium"
-                  style={{ fontSize: "0.75rem", color: "#64748B", letterSpacing: "0.03em" }}
-                >
-                  Password
-                </label>
-                <Link
-                  href="/forgot-password"
-                  className="text-xs transition-colors hover:underline"
-                  style={{ color: "#3B82F6" }}
-                >
-                  Forgot password?
-                </Link>
-              </div>
-              <div className="relative">
-                <Lock
-                  className="absolute left-4 top-1/2 -translate-y-1/2 w-[15px] h-[15px]"
-                  style={{ color: "#2D3F5C" }}
-                />
-                <input
-                  type={showPassword ? "text" : "password"}
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022"
-                  autoComplete="current-password"
-                  className="w-full rounded-xl text-sm text-white placeholder-[#1E2D40] outline-none"
-                  style={{
-                    background: "#0D1626",
-                    border: "1px solid #162035",
-                    padding: "14px 48px 14px 44px",
-                    transition: "border-color 0.15s, box-shadow 0.15s",
-                  }}
-                  onFocus={(e) => {
-                    e.target.style.borderColor = "#2563EB";
-                    e.target.style.boxShadow = "0 0 0 3px rgba(37,99,235,0.1)";
-                  }}
-                  onBlur={(e) => {
-                    e.target.style.borderColor = "#162035";
-                    e.target.style.boxShadow = "none";
-                  }}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 transition-colors"
-                  style={{ color: showPassword ? "#3B82F6" : "#2D3F5C" }}
-                  aria-label={showPassword ? "Hide password" : "Show password"}
-                >
-                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
-              </div>
-            </div>
-
-            {/* Submit */}
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full flex items-center justify-center gap-2.5 rounded-xl font-semibold text-white disabled:opacity-50"
-              style={{
-                background: "#2563EB",
-                padding: "14px 24px",
-                fontSize: "0.875rem",
-                transition: "background 0.15s, transform 0.1s, box-shadow 0.15s",
-                boxShadow: "0 1px 3px rgba(0,0,0,0.4), 0 4px 16px rgba(37,99,235,0.25)",
-              }}
-              onMouseEnter={(e) => { if (!loading) { e.currentTarget.style.background = "#1D4ED8"; e.currentTarget.style.boxShadow = "0 2px 6px rgba(0,0,0,0.4), 0 6px 24px rgba(37,99,235,0.35)"; } }}
-              onMouseLeave={(e) => { if (!loading) { e.currentTarget.style.background = "#2563EB"; e.currentTarget.style.boxShadow = "0 1px 3px rgba(0,0,0,0.4), 0 4px 16px rgba(37,99,235,0.25)"; } }}
-              onMouseDown={(e) => { e.currentTarget.style.transform = "scale(0.99)"; }}
-              onMouseUp={(e) => { e.currentTarget.style.transform = "scale(1)"; }}
-            >
-              {loading ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <>
-                  <span>Sign in to dashboard</span>
-                  <ArrowRight className="w-4 h-4" />
-                </>
-              )}
-            </button>
-          </form>
-
-          <p className="mt-8 text-center" style={{ fontSize: "0.75rem", color: "#1E293B" }}>
-            Don&apos;t have an account?{" "}
-            <Link
-              href="/signup"
-              className="font-medium transition-colors hover:underline"
-              style={{ color: "#3B82F6" }}
-            >
-              Request access
-            </Link>
-          </p>
         </div>
       </div>
     </div>
@@ -375,8 +309,8 @@ export default function LoginPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen flex items-center justify-center" style={{ background: "#07090F" }}>
-          <Loader2 className="w-8 h-8 animate-spin" style={{ color: "#3B82F6" }} />
+        <div className="min-h-screen flex items-center justify-center bg-[#f7fff0]">
+          <Loader2 className="w-8 h-8 animate-spin text-[#064734]" />
         </div>
       }
     >
