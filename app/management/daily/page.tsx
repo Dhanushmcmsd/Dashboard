@@ -179,12 +179,6 @@ export default function DailyDashboardPage() {
   // collectionHistory: empty array until a trend API is wired
   const collectionHistory: { date: string; efficiency: number; overdueBalance: number }[] = [];
 
-  // Portfolio mix data for pie chart
-  const portfolioData = data.branches.map((b) => ({
-    name: b.branch,
-    value: b.closingBalance,
-  }));
-
   return (
     <div className="space-y-8">
 
@@ -369,7 +363,7 @@ export default function DailyDashboardPage() {
             {/* Portfolio Mix Pie */}
             <div className="bg-white border border-[#c8e6c0] rounded-3xl p-6 shadow-sm hover:shadow-md transition-shadow duration-300 animate-fade-up-delay-3">
               <h3 className="text-xs font-semibold text-[#4a7c5f] uppercase tracking-wider mb-5">Portfolio Mix</h3>
-              <PortfolioMixChart data={portfolioData} />
+              <PortfolioMixChart branches={data.branches} />
             </div>
 
             {/* Collection Efficiency — 2 cols */}
