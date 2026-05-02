@@ -5,6 +5,7 @@ import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Loader2, Mail, Lock, ArrowRight, CheckCircle2, AlertCircle, Eye, EyeOff } from "lucide-react";
+import Image from "next/image";
 
 function LoginForm() {
   const router = useRouter();
@@ -104,8 +105,8 @@ function LoginForm() {
                 border: "1px solid rgba(255,255,255,0.08)",
               }}
             >
-              <img
-                src="/supra-pacific-rights-issue-logo.jpg"
+              <Image
+                src="/logo.svg"
                 alt="Supra Pacific"
                 width={26}
                 height={26}
@@ -120,8 +121,8 @@ function LoginForm() {
 
           {/* Centre: logo + headline */}
           <div className="flex-1 flex flex-col justify-center py-12">
-            <img
-              src="/supra-pacific-rights-issue-logo.jpg"
+            <Image
+              src="/logo.svg"
               alt="Supra Pacific Logo"
               width={108}
               height={108}
@@ -171,8 +172,8 @@ function LoginForm() {
 
           {/* Mobile logo */}
           <div className="flex lg:hidden items-center gap-3 mb-10">
-            <img
-              src="/supra-pacific-rights-issue-logo.jpg"
+            <Image
+              src="/logo.svg"
               alt="Supra Pacific"
               width={36}
               height={36}
