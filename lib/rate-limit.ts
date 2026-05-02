@@ -1,35 +1,39 @@
-// WARNING: This in-memory rate limiter is NOT effective on serverless/Vercel deployments
-// because each cold start creates a fresh instance. Replace with Upstash Redis for production.
-import { LRUCache } from "lru-cache";
+// Upstash-based rate limiter — works correctly on Vercel serverless (no shared memory required)
+// Uses a sliding window via Upstash REST API (INCR + EXPIRE)
 
-type Options = {
-  uniqueTokenPerInterval?: number;
-  interval?: number;
-};
-
-export default function rateLimit(options?: Options) {
-  const tokenCache = new LRUCache({
-    max: options?.uniqueTokenPerInterval || 500,
-    ttl: options?.interval || 60000,
-  });
+export default function rateLimit(options?: { interval?: number }) {
+  const intervalMs = options?.interval ?? 60_000;
+  const intervalSec = Math.ceil(intervalMs / 1000);
 
   return {
-    check: (limit: number, token: string) =>
-      new Promise<void>((resolve, reject) => {
-        const tokenCount = (tokenCache.get(token) as number[]) || [0];
-        if (tokenCount[0] === 0) {
-          tokenCache.set(token, tokenCount);
-        }
-        tokenCount[0] += 1;
+    check: async (limit: number, token: string): Promise<void> => {
+      const { UPSTASH_REDIS_REST_URL, UPSTASH_REDIS_REST_TOKEN } = process.env;
 
-        const currentUsage = tokenCount[0];
-        const isRateLimited = currentUsage > limit;
+      // Fallback to always-allow if env vars not set (local dev without Redis)
+      if (!UPSTASH_REDIS_REST_URL || !UPSTASH_REDIS_REST_TOKEN) return;
 
-        if (isRateLimited) {
-          reject();
-        } else {
-          resolve();
-        }
-      }),
+      const key = `rate_limit:${token}`;
+
+      const pipeline = [
+        ["INCR", key],
+        ["EXPIRE", key, intervalSec, "NX"],
+      ];
+
+      const res = await fetch(UPSTASH_REDIS_REST_URL + "/pipeline", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${UPSTASH_REDIS_REST_TOKEN}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(pipeline),
+      });
+
+      const json = await res.json();
+      const count: number = json?.[0]?.result ?? 0;
+
+      if (count > limit) {
+        throw new Error("Rate limit exceeded");
+      }
+    },
   };
 }

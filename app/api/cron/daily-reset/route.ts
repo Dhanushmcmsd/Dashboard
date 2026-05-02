@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { buildDailySnapshot } from "@/lib/snapshot-generator";
 import { getTodayKey } from "@/lib/utils";
+import { prisma } from "@/lib/prisma";
+import { sendDailyStatusEmail } from "@/lib/email";
 
 export async function POST(req: Request) {
   try {
@@ -10,11 +12,38 @@ export async function POST(req: Request) {
     }
 
     const dateKey = getTodayKey();
+    // buildDailySnapshot returns DailyDashboardData directly
     const snapshot = await buildDailySnapshot(dateKey);
+
+    // Feature 7: notify all active admins about upload status
+    try {
+      const uploadedBranches = snapshot.uploadedBranches ?? [];
+      const missingBranches  = snapshot.missingBranches  ?? [];
+
+      const admins = await prisma.user.findMany({
+        where: { role: "ADMIN", isActive: true },
+        select: { email: true, name: true },
+      });
+
+      await Promise.all(
+        admins.map((admin) =>
+          sendDailyStatusEmail(admin.email, admin.name, {
+            dateKey,
+            uploadedBranches,
+            missingBranches,
+            totalUploaded: uploadedBranches.length,
+            totalBranches: uploadedBranches.length + missingBranches.length,
+          })
+        )
+      );
+    } catch (emailErr) {
+      // Email errors must never break the cron response
+      console.error("[daily-reset] Failed to send status emails:", emailErr);
+    }
 
     return NextResponse.json({
       success: true,
-      dateKey: snapshot.dateKey,
+      dateKey:         snapshot.dateKey,
       missingBranches: snapshot.missingBranches,
     });
   } catch (error) {

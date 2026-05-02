@@ -1,10 +1,9 @@
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { redirect } from "next/navigation";
-import AlertToast from "@/components/shared/AlertToast";
 import Link from "next/link";
-import { LogOut } from "lucide-react";
 import SignOutButton from "@/components/employee/SignOutButton";
+import EventsProvider from "@/components/providers/EventsProvider";
 
 export default async function EmployeeLayout({ children }: { children: React.ReactNode }) {
   const session = await getServerSession(authOptions);
@@ -40,7 +39,7 @@ export default async function EmployeeLayout({ children }: { children: React.Rea
         </div>
       </main>
 
-      <AlertToast />
+      <EventsProvider>{null}</EventsProvider>
     </div>
   );
 }

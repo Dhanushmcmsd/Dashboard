@@ -1,39 +1,18 @@
 "use client";
 
-import { useEffect } from "react";
 import { BranchName } from "@/types";
 import { useBranchDashboard } from "@/hooks/useDashboardData";
-import { getPusherClient } from "@/lib/pusher-client";
-import { PUSHER_CHANNELS, PUSHER_EVENTS, BRANCH_COLORS } from "@/lib/constants";
-import { useQueryClient } from "@tanstack/react-query";
-import { QUERY_KEYS } from "@/lib/query-client";
 import KPICard from "./KPICard";
 import DpdBucketChart from "./DpdBucketChart";
 import { format } from "date-fns";
-import { CheckCircle2, Clock, Loader2 } from "lucide-react";
+import { Clock, Loader2 } from "lucide-react";
 
 interface Props {
   branch: BranchName;
 }
 
 export default function BranchDetailView({ branch }: Props) {
-  const qc = useQueryClient();
   const { data, isLoading, isError, refetch } = useBranchDashboard(branch);
-
-  useEffect(() => {
-    const pusher = getPusherClient();
-    const channel = pusher.subscribe(PUSHER_CHANNELS.PRIVATE_UPLOADS);
-
-    channel.bind(PUSHER_EVENTS.UPLOAD_COMPLETE, (payload: { branch: string }) => {
-      if (payload.branch === branch) {
-        refetch();
-      }
-    });
-
-    return () => {
-      pusher.unsubscribe(PUSHER_CHANNELS.PRIVATE_UPLOADS);
-    };
-  }, [branch, refetch]);
 
   if (isLoading) {
     return (
@@ -74,8 +53,6 @@ export default function BranchDetailView({ branch }: Props) {
     count: data.dpdBuckets[key as keyof typeof data.dpdBuckets].count,
     amount: data.dpdBuckets[key as keyof typeof data.dpdBuckets].amount,
   }));
-
-  const colorClass = `bg-[${BRANCH_COLORS[branch]}]`; // We will handle dynamic colors properly but this gives a hint
 
   return (
     <div className="space-y-6">

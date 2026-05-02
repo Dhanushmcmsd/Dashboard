@@ -7,6 +7,14 @@
     {
       "path": "/api/cron/monthly-reset",
       "schedule": "30 18 1 * *"
+    },
+    {
+      "path": "/api/cron/upload-reminder",
+      "schedule": "30 9 * * *"
+    },
+    {
+      "path": "/api/cron/daily-summary-email",
+      "schedule": "0 13 * * *"
     }
   ]
 }

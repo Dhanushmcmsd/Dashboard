@@ -3,6 +3,8 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import { prisma } from "./prisma";
 
+type AppRole = "ADMIN" | "EMPLOYEE" | "MANAGEMENT" | "SUPER_ADMIN";
+
 export const authOptions: AuthOptions = {
   providers: [
     CredentialsProvider({
@@ -41,7 +43,7 @@ export const authOptions: AuthOptions = {
           id: user.id,
           name: user.name,
           email: user.email,
-          role: user.role,
+          role: user.role as AppRole,
           branches: user.branches,
         };
       },
@@ -50,7 +52,7 @@ export const authOptions: AuthOptions = {
 
   session: {
     strategy: "jwt",
-    maxAge: 8 * 60 * 60, // 8 hours
+    maxAge: 8 * 60 * 60,
   },
 
   callbacks: {
@@ -68,7 +70,7 @@ export const authOptions: AuthOptions = {
         session.user = {
           ...session.user,
           id: token.id as string,
-          role: token.role as "ADMIN" | "EMPLOYEE" | "MANAGEMENT",
+          role: token.role as AppRole,
           branches: token.branches as string[],
         };
       }
@@ -82,7 +84,6 @@ export const authOptions: AuthOptions = {
     error: "/login",
   },
 
-  // Important: this ensures error messages are passed through
   secret: process.env.NEXTAUTH_SECRET,
 
   debug: process.env.NODE_ENV === "development",

@@ -22,7 +22,6 @@ function LoginForm() {
     setLoading(true);
 
     try {
-      // Pre-check email status
       const res = await fetch(
         `/api/auth/check-email?email=${encodeURIComponent(email)}`
       );
@@ -55,7 +54,6 @@ function LoginForm() {
       });
 
       if (result?.error) {
-        // NextAuth wraps errors — show a friendly message
         if (
           result.error.toLowerCase().includes("password") ||
           result.error === "CredentialsSignin"
@@ -77,16 +75,44 @@ function LoginForm() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden bg-[#0A0A0C]">
-      {/* Background glow */}
-      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-primary/20 blur-[120px] rounded-full pointer-events-none" />
+    <div className="min-h-screen flex bg-[#0D1117]">
+      {/* Left panel — brand */}
+      <div className="hidden lg:flex flex-col justify-center items-center w-2/5 bg-[#111827] border-r border-[#1E2D42] px-12">
+        <img
+          src="/supra-pacific-rights-issue-logo.png"
+          alt="Supra Pacific"
+          width={88}
+          height={88}
+          className="object-contain mb-6"
+        />
+        <h1 className="text-2xl font-bold text-white text-center leading-snug">Supra Pacific</h1>
+        <p className="text-sm text-text-muted text-center mt-2 tracking-wide uppercase">
+          Management Information System
+        </p>
+        <div className="mt-10 w-16 h-0.5 bg-[#1E2D42] rounded-full" />
+        <p className="mt-6 text-xs text-text-muted text-center max-w-xs">
+          Secure portal for branch performance, AUM tracking, and financial analytics.
+        </p>
+      </div>
 
-      <div className="w-full max-w-md relative z-10">
-        <div className="bg-surface/80 backdrop-blur-xl border border-border p-8 rounded-2xl shadow-2xl">
-          <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-white mb-2">BranchSync</h1>
-            <p className="text-text-muted">Welcome back. Please log in.</p>
+      {/* Right panel — form */}
+      <div className="flex-1 flex items-center justify-center p-8">
+        <div className="w-full max-w-sm">
+          {/* Mobile logo */}
+          <div className="flex lg:hidden flex-col items-center mb-8">
+            <img
+              src="/supra-pacific-rights-issue-logo.png"
+              alt="Supra Pacific"
+              width={56}
+              height={56}
+              className="object-contain mb-3"
+            />
+            <h1 className="text-xl font-bold text-white">Supra Pacific</h1>
+            <p className="text-xs text-text-muted uppercase tracking-wider mt-1">Management Information System</p>
           </div>
+
+          <h2 className="text-xl font-semibold text-white mb-1">Sign in</h2>
+          <p className="text-sm text-text-muted mb-8">Enter your credentials to continue.</p>
 
           {msg === "password-set" && (
             <div className="mb-6 p-4 bg-success/10 border border-success/20 text-success rounded-lg text-sm text-center">
@@ -102,7 +128,7 @@ function LoginForm() {
 
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <label className="block text-sm font-medium text-text-muted mb-1.5">
+              <label className="block text-xs font-medium text-text-muted mb-1.5 uppercase tracking-wider">
                 Email address
               </label>
               <input
@@ -117,7 +143,7 @@ function LoginForm() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-text-muted mb-1.5">
+              <label className="block text-xs font-medium text-text-muted mb-1.5 uppercase tracking-wider">
                 Password
               </label>
               <input
@@ -129,12 +155,20 @@ function LoginForm() {
                 placeholder="••••••••"
                 autoComplete="current-password"
               />
+              <div className="text-right mt-1.5">
+                <Link
+                  href="/forgot-password"
+                  className="text-xs text-text-muted hover:text-primary transition-colors"
+                >
+                  Forgot password?
+                </Link>
+              </div>
             </div>
 
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-primary hover:bg-primary/90 text-white font-medium py-2.5 rounded-lg transition-colors flex items-center justify-center disabled:opacity-70"
+              className="w-full bg-primary hover:bg-primary-hover text-white font-medium py-2.5 rounded-lg transition-colors flex items-center justify-center disabled:opacity-70"
             >
               {loading ? (
                 <Loader2 className="w-5 h-5 animate-spin" />
@@ -148,7 +182,7 @@ function LoginForm() {
             Don&apos;t have an account?{" "}
             <Link
               href="/signup"
-              className="text-primary hover:text-primary/80 font-medium transition-colors"
+              className="text-primary hover:text-primary-hover font-medium transition-colors"
             >
               Sign up
             </Link>
@@ -163,7 +197,7 @@ export default function LoginPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen flex items-center justify-center bg-[#0A0A0C]">
+        <div className="min-h-screen flex items-center justify-center bg-[#0D1117]">
           <Loader2 className="w-8 h-8 animate-spin text-primary" />
         </div>
       }

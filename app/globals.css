@@ -1,25 +1,26 @@
 @import "tailwindcss";
 
 @theme {
-  --color-background: #0A0A0C;
-  --color-surface: #111116;
-  --color-elevated: #18181F;
-  --color-border: #2A2A35;
-  --color-primary: #2563EB;
-  --color-primary-hover: #3B82F6;
-  --color-accent: #DC2626;
-  --color-accent-dim: #991B1B;
+  --color-background: #0D1117;
+  --color-surface: #111827;
+  --color-elevated: #1C2A3E;
+  --color-border: #1E2D42;
+  --color-primary: #1D4ED8;
+  --color-primary-hover: #2563EB;
+  --color-accent: #C8102E;
+  --color-accent-dim: #9B0B21;
   --color-success: #16A34A;
   --color-warning: #D97706;
-  --color-danger: #DC2626;
+  --color-danger: #C8102E;
   --color-text-primary: #E2E8F0;
   --color-text-muted: #64748B;
-  --color-sidebar: #0D0D12;
-  --color-branch-supermarket: #2563EB;
+  --color-sidebar: #0D1117;
+  --color-branch-supermarket: #1D4ED8;
   --color-branch-gold-loan: #D97706;
   --color-branch-mf-loan: #16A34A;
-  --color-branch-vehicle-loan: #DC2626;
+  --color-branch-vehicle-loan: #C8102E;
   --color-branch-personal-loan: #7C3AED;
+  --font-data: 'Geist Mono', monospace;
 }
 
 :root {
@@ -30,18 +31,18 @@
 * { box-sizing: border-box; }
 body {
   margin: 0;
-  background-color: #0A0A0C;
+  background-color: #0D1117;
   color: #E2E8F0;
 }
 
 ::-webkit-scrollbar { width: 5px; height: 5px; }
-::-webkit-scrollbar-track { background: #0A0A0C; }
-::-webkit-scrollbar-thumb { background: #2A2A35; border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: #3A3A45; }
+::-webkit-scrollbar-track { background: #0D1117; }
+::-webkit-scrollbar-thumb { background: #1E2D42; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #2A3F5C; }
 
 /* Glass Card */
 .glass-card {
-  background: #111116;
+  background: #111827;
   border: 1px solid rgba(255, 255, 255, 0.06);
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
   border-radius: 12px;
@@ -56,13 +57,13 @@ body {
   left: 0;
   right: 0;
   height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.08), transparent);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.06), transparent);
   pointer-events: none;
 }
 
 /* Stat Card */
 .stat-card {
-  background: #111116;
+  background: #111827;
   border: 1px solid rgba(255, 255, 255, 0.06);
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
   border-radius: 12px;
@@ -78,13 +79,13 @@ body {
   left: 0;
   right: 0;
   height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.08), transparent);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.06), transparent);
   pointer-events: none;
 }
 
 /* Buttons */
 .btn-primary {
-  background-color: #2563EB;
+  background-color: #1D4ED8;
   color: #ffffff;
   font-weight: 500;
   padding: 0.5rem 1rem;
@@ -96,11 +97,11 @@ body {
   align-items: center;
   gap: 0.5rem;
 }
-.btn-primary:hover { background-color: #3B82F6; }
+.btn-primary:hover { background-color: #2563EB; }
 .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
 
 .btn-danger {
-  background-color: #991B1B;
+  background-color: #9B0B21;
   color: #ffffff;
   font-weight: 500;
   padding: 0.5rem 1rem;
@@ -112,10 +113,10 @@ body {
   align-items: center;
   gap: 0.5rem;
 }
-.btn-danger:hover { background-color: #DC2626; }
+.btn-danger:hover { background-color: #C8102E; }
 
 .btn-ghost {
-  border: 1px solid #2A2A35;
+  border: 1px solid #1E2D42;
   color: #E2E8F0;
   font-weight: 500;
   padding: 0.5rem 1rem;
@@ -124,11 +125,11 @@ body {
   transition: border-color 0.15s ease;
   cursor: pointer;
 }
-.btn-ghost:hover { border-color: #2563EB; }
+.btn-ghost:hover { border-color: #1D4ED8; }
 
-/* Input focus glow */
+/* Input focus */
 .input-dark {
-  background: #0F0F14;
+  background: #0D1117;
   border: 1px solid rgba(255, 255, 255, 0.08);
   color: #E2E8F0;
   border-radius: 0.5rem;
@@ -139,16 +140,16 @@ body {
   width: 100%;
 }
 .input-dark:focus {
-  border-color: #2563EB;
-  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
+  border-color: #1D4ED8;
+  box-shadow: 0 0 0 2px rgba(29, 78, 216, 0.15);
 }
 .input-dark::placeholder { color: #64748B; }
 
-/* Red accent border glow for danger cards */
+/* Danger card */
 .danger-card {
-  background: #111116;
-  border: 1px solid rgba(220, 38, 38, 0.3);
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(220, 38, 38, 0.1);
+  background: #111827;
+  border: 1px solid rgba(200, 16, 46, 0.3);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(200, 16, 46, 0.1);
   border-radius: 12px;
   position: relative;
   overflow: hidden;
@@ -156,8 +157,8 @@ body {
 
 /* Sidebar active state */
 .sidebar-active {
-  border-left: 3px solid #DC2626;
-  background: #1A1A24;
+  border-left: 2px solid #C8102E;
+  background: #1C2A3E;
   color: #E2E8F0;
 }
 
@@ -170,42 +171,54 @@ body {
   animation: pulse-dot 2s ease-in-out infinite;
 }
 
-/* Table styling */
+/* Financial table — Bloomberg terminal style */
 .dark-table {
   width: 100%;
   border-collapse: collapse;
   font-size: 0.875rem;
 }
 .dark-table thead tr {
-  background: #18181F;
+  background: #1C2A3E;
 }
 .dark-table thead th {
-  text-align: left;
+  text-align: right;
   padding: 0.75rem 1rem;
-  color: #64748B;
-  font-size: 0.75rem;
-  font-weight: 500;
+  color: #ffffff;
+  font-size: 0.6875rem;
+  font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.08em;
   white-space: nowrap;
+  border-bottom: 1px solid #1E2D42;
+  font-variant-numeric: tabular-nums;
 }
+.dark-table thead th:first-child { text-align: left; }
 .dark-table tbody tr {
-  border-top: 1px solid rgba(42, 42, 53, 0.5);
-  transition: background-color 0.1s ease;
+  border-top: 1px solid #1E2D42;
+  transition: background-color 0.2s ease;
 }
-.dark-table tbody tr:nth-child(odd) { background: #111116; }
-.dark-table tbody tr:nth-child(even) { background: #0F0F14; }
-.dark-table tbody tr:hover { background: rgba(42, 42, 53, 0.4); }
+.dark-table tbody tr:nth-child(odd)  { background: #111827; }
+.dark-table tbody tr:nth-child(even) { background: #0D1117; }
+.dark-table tbody tr:hover { background: #1C2A3E; }
 .dark-table tbody td {
   padding: 0.75rem 1rem;
   color: #E2E8F0;
+  border: 1px solid #1E2D42;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-family: var(--font-geist-mono);
+}
+.dark-table tbody td:first-child {
+  text-align: left;
+  font-family: var(--font-geist-sans);
+  font-variant-numeric: normal;
 }
 
 /* Role badges */
 .badge-admin {
-  background: rgba(220, 38, 38, 0.15);
-  color: #DC2626;
-  border: 1px solid rgba(220, 38, 38, 0.3);
+  background: rgba(200, 16, 46, 0.15);
+  color: #C8102E;
+  border: 1px solid rgba(200, 16, 46, 0.3);
   font-size: 0.7rem;
   font-weight: 600;
   padding: 0.2rem 0.6rem;
@@ -214,9 +227,9 @@ body {
   letter-spacing: 0.05em;
 }
 .badge-management {
-  background: rgba(37, 99, 235, 0.15);
+  background: rgba(29, 78, 216, 0.15);
   color: #60A5FA;
-  border: 1px solid rgba(37, 99, 235, 0.3);
+  border: 1px solid rgba(29, 78, 216, 0.3);
   font-size: 0.7rem;
   font-weight: 600;
   padding: 0.2rem 0.6rem;
@@ -256,9 +269,9 @@ body {
   border-radius: 9999px;
 }
 .badge-danger {
-  background: rgba(220, 38, 38, 0.15);
+  background: rgba(200, 16, 46, 0.15);
   color: #F87171;
-  border: 1px solid rgba(220, 38, 38, 0.3);
+  border: 1px solid rgba(200, 16, 46, 0.3);
   font-size: 0.75rem;
   font-weight: 500;
   padding: 0.2rem 0.6rem;
@@ -282,10 +295,20 @@ body {
   letter-spacing: 0.1em;
 }
 
-/* Stat number */
+/* Stat number — financial data, mono + tabular */
 .stat-number {
-  font-size: 1.875rem;
+  font-size: 1.75rem;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
+  font-family: var(--font-geist-mono);
   letter-spacing: -0.02em;
+}
+
+/* Print utilities */
+@media print {
+  .print\:hidden { display: none !important; }
+  .print\:block  { display: block  !important; }
+  body { background: #ffffff; color: #000000; }
+  .dark-table tbody td,
+  .dark-table thead th { border-color: #cccccc; color: #000000; }
 }

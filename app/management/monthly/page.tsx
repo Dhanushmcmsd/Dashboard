@@ -1,20 +1,35 @@
 "use client";
 
+import { useState } from "react";
 import { useMonthlyDashboard } from "@/hooks/useDashboardData";
-import { Loader2, RefreshCcw, CalendarDays, TrendingUp, TrendingDown, Minus } from "lucide-react";
-import { format } from "date-fns";
+import { Loader2, RefreshCcw, CalendarDays, TrendingUp, TrendingDown, Minus, Download, ChevronLeft, ChevronRight } from "lucide-react";
+import { format, subMonths, addMonths, startOfMonth } from "date-fns";
 import KPICard from "@/components/management/KPICard";
 import BranchComparisonChart from "@/components/management/BranchComparisonChart";
+import PortfolioMixChart from "@/components/management/PortfolioMixChart";
 import { formatINRCompact } from "@/lib/utils";
 
+function toMonthKey(d: Date) {
+  return format(d, "yyyy-MM");
+}
+
 export default function MonthlyDashboardPage() {
-  const { data, isLoading, isError, refetch } = useMonthlyDashboard();
+  const [selectedMonth, setSelectedMonth] = useState<Date>(startOfMonth(new Date()));
+  const monthKey = toMonthKey(selectedMonth);
+  const isCurrentMonth = monthKey === toMonthKey(startOfMonth(new Date()));
+
+  const { data, isLoading, isError, refetch } = useMonthlyDashboard(monthKey);
+
+  function prevMonth() { setSelectedMonth((d) => startOfMonth(subMonths(d, 1))); }
+  function nextMonth() {
+    if (!isCurrentMonth) setSelectedMonth((d) => startOfMonth(addMonths(d, 1)));
+  }
 
   if (isLoading) {
     return (
       <div className="flex flex-col items-center justify-center h-64 space-y-4">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        <p className="text-text-muted">Loading monthly dashboard...</p>
+        <p className="text-text-muted">Loading monthly dashboard…</p>
       </div>
     );
   }
@@ -24,7 +39,7 @@ export default function MonthlyDashboardPage() {
       <div className="bg-danger/10 border border-danger/20 rounded-xl p-8 text-center max-w-lg mx-auto mt-12">
         <h3 className="text-danger font-medium text-lg mb-2">Failed to load dashboard</h3>
         <p className="text-danger/80 mb-6">There was an error fetching the monthly data.</p>
-        <button 
+        <button
           onClick={() => refetch()}
           className="px-6 py-2 bg-surface border border-border rounded-lg font-medium hover:bg-elevated transition-colors inline-flex items-center"
         >
@@ -39,22 +54,65 @@ export default function MonthlyDashboardPage() {
 
   return (
     <div className="space-y-8">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between bg-surface border border-border rounded-xl p-6">
+      {/* ── Header ── */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between bg-surface border border-border rounded-xl p-6 gap-4">
         <div>
           <h2 className="text-2xl font-bold text-text-primary flex items-center gap-3">
             Monthly Overview
-            <span className="flex items-center text-xs font-medium bg-elevated text-text-primary border border-border px-3 py-1 rounded-full">
-              <CalendarDays className="w-3 h-3 mr-1.5 text-text-muted" />
-              {data.monthKey}
-            </span>
           </h2>
           <p className="text-sm text-text-muted mt-2">
             Aggregated monthly totals and month-over-month growth.
           </p>
         </div>
-        <div className="mt-4 md:mt-0 text-left md:text-right">
-          <div className="flex items-center gap-3 md:justify-end mb-1">
+
+        <div className="flex flex-col items-start md:items-end gap-3">
+          {/* ── Month picker ── */}
+          <div className="flex items-center gap-1 bg-elevated border border-border rounded-xl px-2 py-1.5">
+            <button
+              onClick={prevMonth}
+              className="p-1.5 rounded-lg hover:bg-border transition-colors text-text-muted hover:text-text-primary"
+              title="Previous month"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+
+            {/* native month input hidden behind the label */}
+            <label className="flex items-center gap-2 cursor-pointer select-none px-1">
+              <CalendarDays className="w-4 h-4 text-text-muted" />
+              <span className="text-sm font-semibold text-text-primary min-w-[90px] text-center">
+                {format(selectedMonth, "MMM yyyy")}
+              </span>
+              <input
+                type="month"
+                value={monthKey}
+                max={toMonthKey(new Date())}
+                onChange={(e) => {
+                  if (e.target.value) setSelectedMonth(startOfMonth(new Date(e.target.value + "-01")));
+                }}
+                className="opacity-0 absolute w-0 h-0 pointer-events-none"
+              />
+            </label>
+
+            <button
+              onClick={nextMonth}
+              disabled={isCurrentMonth}
+              className="p-1.5 rounded-lg hover:bg-border transition-colors text-text-muted hover:text-text-primary disabled:opacity-30 disabled:cursor-not-allowed"
+              title="Next month"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
+
+          <button
+            onClick={() => window.open(`/api/export/monthly?month=${data.monthKey}`)}
+            className="flex items-center gap-1.5 bg-elevated hover:bg-border border border-border text-text-primary text-sm px-3 py-1.5 rounded-lg transition-colors"
+            title="Export to Excel"
+          >
+            <Download className="w-4 h-4" />
+            Export Excel
+          </button>
+
+          <div className="flex items-center gap-3 md:justify-end">
             <span className="text-sm font-medium px-2.5 py-1 bg-surface border border-border rounded text-text-primary">
               {data.branches.length}
             </span>
@@ -78,15 +136,19 @@ export default function MonthlyDashboardPage() {
         <>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <KPICard label="Monthly Closing Balance" value={data.totals.closingBalance} colorClass="bg-blue-500" />
-            <KPICard label="Monthly Disbursement" value={data.totals.disbursement} colorClass="bg-green-500" />
-            <KPICard label="Monthly Collection" value={data.totals.collection} colorClass="bg-purple-500" />
-            <KPICard label="Monthly NPA" value={data.totals.npa} colorClass="bg-red-500" />
+            <KPICard label="Monthly Disbursement"   value={data.totals.disbursement}   colorClass="bg-green-500" />
+            <KPICard label="Monthly Collection"     value={data.totals.collection}     colorClass="bg-purple-500" />
+            <KPICard label="Monthly NPA"            value={data.totals.npa}            colorClass="bg-red-500" />
           </div>
 
-          <div className="bg-surface border border-border rounded-xl p-6">
-            <h3 className="text-lg font-medium text-text-primary mb-6">Branch Comparison (Monthly)</h3>
-            <div className="h-[400px]">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="bg-surface border border-border rounded-xl p-6">
+              <h3 className="text-lg font-medium text-text-primary mb-6">Branch Comparison (Monthly)</h3>
               <BranchComparisonChart branches={data.branches} />
+            </div>
+            <div className="bg-surface border border-border rounded-xl p-6">
+              <h3 className="text-lg font-medium text-text-primary mb-6">Portfolio Mix</h3>
+              <PortfolioMixChart branches={data.branches} />
             </div>
           </div>
 
@@ -115,13 +177,13 @@ export default function MonthlyDashboardPage() {
                       <td className="px-6 py-4 text-center">
                         {b.growthPercent !== null ? (
                           <div className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium ${
-                            b.trend === "up" ? "text-success bg-success/10" : 
-                            b.trend === "down" ? "text-danger bg-danger/10" : 
+                            b.trend === "up"      ? "text-success bg-success/10" :
+                            b.trend === "down"    ? "text-danger bg-danger/10" :
                             "text-text-muted bg-surface"
                           }`}>
-                            {b.trend === "up" && <TrendingUp className="w-3 h-3" />}
-                            {b.trend === "down" && <TrendingDown className="w-3 h-3" />}
-                            {b.trend === "neutral" && <Minus className="w-3 h-3" />}
+                            {b.trend === "up"      && <TrendingUp   className="w-3 h-3" />}
+                            {b.trend === "down"    && <TrendingDown  className="w-3 h-3" />}
+                            {b.trend === "neutral" && <Minus         className="w-3 h-3" />}
                             {Math.abs(b.growthPercent)}%
                           </div>
                         ) : (

@@ -35,13 +35,8 @@ export const HTTP_STATUS = {
   INTERNAL_SERVER_ERROR: 500,
 };
 
-export const PUSHER_CHANNELS = {
-  PRIVATE_UPLOADS: "private-uploads",
-  PRIVATE_DASHBOARD: "private-dashboard",
-  PRIVATE_ALERTS: "private-alerts",
-};
-
-export const PUSHER_EVENTS = {
+// SSE event type names — used by app/api/events/route.ts and publishEvent
+export const SSE_EVENTS = {
   UPLOAD_COMPLETE: "upload-complete",
   DASHBOARD_UPDATED: "dashboard-updated",
   NEW_ALERT: "new-alert",
