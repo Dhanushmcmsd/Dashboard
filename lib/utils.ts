@@ -30,6 +30,15 @@ export function formatINR(amount: number): string {
   });
 }
 
+export function formatINRFull(amount: number): string {
+  return amount.toLocaleString("en-IN", {
+    style: "currency",
+    currency: "INR",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+}
+
 export function formatINRCompact(amount: number): string {
   if (amount >= 10000000) {
     return `₹${(amount / 10000000).toFixed(2)}Cr`;
