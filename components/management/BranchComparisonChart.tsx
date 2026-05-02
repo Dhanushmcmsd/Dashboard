@@ -57,6 +57,12 @@ interface CustomTooltipProps {
   label?: string;
 }
 
+function formatPctLabel(v: string | number | undefined): string {
+  if (v === null || v === undefined) return "";
+  const n = typeof v === "string" ? parseFloat(v) : v;
+  return isNaN(n) ? "" : `${n.toFixed(1)}%`;
+}
+
 function CustomTooltip({ active, payload, label }: CustomTooltipProps) {
   if (!active || !payload || payload.length === 0) return null;
   return (
@@ -253,7 +259,7 @@ export default function BranchComparisonChart({ branches }: Props) {
                   <LabelList
                     dataKey="CollectionEfficiency"
                     position="top"
-                    formatter={(v: number) => `${v.toFixed(1)}%`}
+                    formatter={formatPctLabel}
                     style={{ fill: "#94A3B8", fontSize: 10 }}
                   />
                 </Bar>
@@ -270,7 +276,7 @@ export default function BranchComparisonChart({ branches }: Props) {
                   <LabelList
                     dataKey="GNPAPct"
                     position="top"
-                    formatter={(v: number) => `${v.toFixed(1)}%`}
+                    formatter={formatPctLabel}
                     style={{ fill: "#94A3B8", fontSize: 10 }}
                   />
                 </Bar>
