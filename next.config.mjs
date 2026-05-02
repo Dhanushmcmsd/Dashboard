@@ -41,18 +41,12 @@ const nextConfig = {
     ];
   },
 
-<<<<<<< HEAD
   // Restrict CORS to same origin for API routes
-=======
->>>>>>> main
   async rewrites() {
     return [];
   },
 
-<<<<<<< HEAD
   // Log only in production
-=======
->>>>>>> main
   logging: {
     fetches: {
       fullUrl: process.env.NODE_ENV === 'development',
