@@ -57,10 +57,10 @@ interface CustomTooltipProps {
   label?: string;
 }
 
-// RenderableText = string | number | null | undefined
-function formatPctLabel(v: string | number | null | undefined): string {
-  if (v === null || v === undefined) return "";
-  const n = typeof v === "string" ? parseFloat(v) : v;
+// Use unknown so the signature is a supertype of any RenderableText union
+function formatPctLabel(v: unknown): string {
+  if (v === null || v === undefined || v === false) return "";
+  const n = typeof v === "string" ? parseFloat(v) : typeof v === "number" ? v : NaN;
   return isNaN(n) ? "" : `${n.toFixed(1)}%`;
 }
 
