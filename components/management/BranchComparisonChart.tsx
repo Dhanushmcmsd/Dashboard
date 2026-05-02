@@ -57,7 +57,8 @@ interface CustomTooltipProps {
   label?: string;
 }
 
-function formatPctLabel(v: string | number | undefined): string {
+// RenderableText = string | number | null | undefined
+function formatPctLabel(v: string | number | null | undefined): string {
   if (v === null || v === undefined) return "";
   const n = typeof v === "string" ? parseFloat(v) : v;
   return isNaN(n) ? "" : `${n.toFixed(1)}%`;
