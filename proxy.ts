@@ -4,10 +4,12 @@ import { getToken } from 'next-auth/jwt';
 
 const PUBLIC_PATHS = [
   '/login',
+  '/signup',
   '/set-password',
   '/forgot-password',
   '/reset-password',
   '/api/auth',
+  '/api/signup',
   '/api/health',
 ];
 
