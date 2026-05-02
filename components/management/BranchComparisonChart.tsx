@@ -22,17 +22,27 @@ interface Props {
 
 type ViewMode = "aum" | "risk" | "efficiency";
 
-// Supra Pacific navy palette — no consumer-bright colors
+// Forest-green palette matching Ascone Finance design
+export const CHART_COLORS = {
+  primary:   "#064734",
+  secondary: "#a8d5b5",
+  accent1:   "#0a7c5c",
+  accent2:   "#4aaa6f",
+  accent3:   "#85c9a0",
+  danger:    "#991b1b",
+  warning:   "#b45309",
+} as const;
+
 const BRANCH_COLORS: Record<string, string> = {
-  Supermarket:    "#1D4ED8",
-  "Gold Loan":    "#D97706",
-  "ML Loan":      "#16A34A",
-  "Vehicle Loan": "#C8102E",
-  "Personal Loan":"#7C3AED",
+  Supermarket:     CHART_COLORS.primary,
+  "Gold Loan":     CHART_COLORS.warning,
+  "ML Loan":       CHART_COLORS.accent1,
+  "Vehicle Loan":  CHART_COLORS.danger,
+  "Personal Loan": CHART_COLORS.accent2,
 };
 
 function getBranchColor(fullName: string): string {
-  return BRANCH_COLORS[fullName] ?? "#4A6FA5";
+  return BRANCH_COLORS[fullName] ?? CHART_COLORS.accent3;
 }
 
 type ChartEntry = {
@@ -69,15 +79,16 @@ function CustomTooltip({ active, payload, label }: CustomTooltipProps) {
   return (
     <div
       style={{
-        backgroundColor: "#1C2A3E",
-        border: "1px solid #1E2D42",
-        borderRadius: "8px",
+        backgroundColor: "#ffffff",
+        border: "1px solid #c8e6c0",
+        borderRadius: "12px",
         fontSize: "12px",
         padding: "10px 14px",
         minWidth: "160px",
+        boxShadow: "0 4px 12px rgba(6,71,52,0.10)",
       }}
     >
-      <p style={{ color: "#E2E8F0", marginBottom: "6px", fontWeight: 600, textTransform: "uppercase", fontSize: "11px", letterSpacing: "0.05em" }}>{label}</p>
+      <p style={{ color: "#064734", marginBottom: "6px", fontWeight: 600, textTransform: "uppercase", fontSize: "11px", letterSpacing: "0.05em" }}>{label}</p>
       {payload.map((entry) => {
         const isPercent = entry.name === "CollectionEfficiency" || entry.name === "GNPAPct";
         const formatted = isPercent ? `${entry.value.toFixed(1)}%` : formatINRCompact(entry.value);
@@ -88,8 +99,8 @@ function CustomTooltip({ active, payload, label }: CustomTooltipProps) {
           : entry.name;
         return (
           <div key={entry.name} style={{ display: "flex", justifyContent: "space-between", gap: "16px" }}>
-            <span style={{ color: "#94A3B8" }}>{displayName}</span>
-            <span style={{ fontWeight: 600, color: entry.color, fontVariantNumeric: "tabular-nums", fontFamily: "var(--font-data)" }}>{formatted}</span>
+            <span style={{ color: "#4a7c5f" }}>{displayName}</span>
+            <span style={{ fontWeight: 600, color: entry.color, fontVariantNumeric: "tabular-nums" }}>{formatted}</span>
           </div>
         );
       })}
@@ -119,16 +130,15 @@ export default function BranchComparisonChart({ branches }: Props) {
 
   return (
     <div className="space-y-4">
-      {/* Underline tab style — formal financial */}
-      <div className="flex border-b border-border">
+      <div className="flex border-b border-[#c8e6c0]">
         {VIEWS.map(({ key, label }) => (
           <button
             key={key}
             onClick={() => setView(key)}
             className={`px-5 py-2.5 text-xs font-semibold uppercase tracking-wider transition-all border-b-2 -mb-px ${
               view === key
-                ? "border-primary text-primary"
-                : "border-transparent text-text-muted hover:text-text-primary"
+                ? "border-[#064734] text-[#064734]"
+                : "border-transparent text-[#4a7c5f] hover:text-[#064734]"
             }`}
           >
             {label}
@@ -146,13 +156,14 @@ export default function BranchComparisonChart({ branches }: Props) {
             <CartesianGrid
               strokeDasharray=""
               vertical={false}
-              stroke="rgba(255,255,255,0.06)"
+              stroke="#c8e6c0"
+              strokeOpacity={0.6}
             />
             <XAxis
               dataKey="name"
               axisLine={false}
               tickLine={false}
-              tick={{ fill: "#64748B", fontSize: 12 }}
+              tick={{ fill: "#4a7c5f", fontSize: 12 }}
               dy={10}
             />
 
@@ -160,7 +171,7 @@ export default function BranchComparisonChart({ branches }: Props) {
               <YAxis
                 axisLine={false}
                 tickLine={false}
-                tick={{ fill: "#64748B", fontSize: 11 }}
+                tick={{ fill: "#4a7c5f", fontSize: 11 }}
                 tickFormatter={(v: number) => `${v.toFixed(0)}%`}
                 domain={[0, 120]}
               />
@@ -168,41 +179,41 @@ export default function BranchComparisonChart({ branches }: Props) {
               <YAxis
                 axisLine={false}
                 tickLine={false}
-                tick={{ fill: "#64748B", fontSize: 11 }}
+                tick={{ fill: "#4a7c5f", fontSize: 11 }}
                 tickFormatter={(v: number) => formatINRCompact(v)}
               />
             )}
 
             <Tooltip
               content={<CustomTooltip />}
-              cursor={{ fill: "rgba(28,42,62,0.6)" }}
+              cursor={{ fill: "rgba(6,71,52,0.04)" }}
             />
-            <Legend wrapperStyle={{ paddingTop: "16px", fontSize: "12px" }} />
+            <Legend wrapperStyle={{ paddingTop: "16px", fontSize: "12px", color: "#4a7c5f" }} />
 
             {view === "aum" && (
               <>
-                <Bar dataKey="Closing" name="Closing" radius={[3,3,0,0]} maxBarSize={36} isAnimationActive animationDuration={600} animationEasing="ease-out">
+                <Bar dataKey="Closing" name="Closing" radius={[4,4,0,0]} maxBarSize={36} isAnimationActive animationDuration={600} animationEasing="ease-out">
                   {data.map((entry) => (<Cell key={entry.fullName} fill={getBranchColor(entry.fullName)} />))}
                 </Bar>
-                <Bar dataKey="MTDDisbursement" name="MTDDisbursement" fill="#16A34A" radius={[3,3,0,0]} maxBarSize={36} isAnimationActive animationDuration={600} animationEasing="ease-out" />
+                <Bar dataKey="MTDDisbursement" name="MTDDisbursement" fill={CHART_COLORS.accent2} radius={[4,4,0,0]} maxBarSize={36} isAnimationActive animationDuration={600} animationEasing="ease-out" />
               </>
             )}
 
             {view === "risk" && (
               <>
-                <ReferenceArea y1={0} fill="#C8102E10" ifOverflow="extendDomain" />
-                <Bar dataKey="Collection" name="Collection" fill="#1D4ED8" radius={[3,3,0,0]} maxBarSize={36} isAnimationActive animationDuration={600} animationEasing="ease-out" />
-                <Bar dataKey="NPA" name="NPA" fill="#C8102E" radius={[3,3,0,0]} maxBarSize={36} isAnimationActive animationDuration={600} animationEasing="ease-out" />
+                <ReferenceArea y1={0} fill={`${CHART_COLORS.danger}08`} ifOverflow="extendDomain" />
+                <Bar dataKey="Collection" name="Collection" fill={CHART_COLORS.accent1} radius={[4,4,0,0]} maxBarSize={36} isAnimationActive animationDuration={600} animationEasing="ease-out" />
+                <Bar dataKey="NPA" name="NPA" fill={CHART_COLORS.danger} radius={[4,4,0,0]} maxBarSize={36} isAnimationActive animationDuration={600} animationEasing="ease-out" />
               </>
             )}
 
             {view === "efficiency" && (
               <>
-                <Bar dataKey="CollectionEfficiency" name="CollectionEfficiency" fill="#1D4ED8" radius={[3,3,0,0]} maxBarSize={36} isAnimationActive animationDuration={600} animationEasing="ease-out">
-                  <LabelList dataKey="CollectionEfficiency" position="top" formatter={formatPctLabel} style={{ fill: "#94A3B8", fontSize: 10 }} />
+                <Bar dataKey="CollectionEfficiency" name="CollectionEfficiency" fill={CHART_COLORS.primary} radius={[4,4,0,0]} maxBarSize={36} isAnimationActive animationDuration={600} animationEasing="ease-out">
+                  <LabelList dataKey="CollectionEfficiency" position="top" formatter={formatPctLabel} style={{ fill: "#4a7c5f", fontSize: 10 }} />
                 </Bar>
-                <Bar dataKey="GNPAPct" name="GNPAPct" fill="#C8102E" radius={[3,3,0,0]} maxBarSize={36} isAnimationActive animationDuration={600} animationEasing="ease-out">
-                  <LabelList dataKey="GNPAPct" position="top" formatter={formatPctLabel} style={{ fill: "#94A3B8", fontSize: 10 }} />
+                <Bar dataKey="GNPAPct" name="GNPAPct" fill={CHART_COLORS.danger} radius={[4,4,0,0]} maxBarSize={36} isAnimationActive animationDuration={600} animationEasing="ease-out">
+                  <LabelList dataKey="GNPAPct" position="top" formatter={formatPctLabel} style={{ fill: "#4a7c5f", fontSize: 10 }} />
                 </Bar>
               </>
             )}

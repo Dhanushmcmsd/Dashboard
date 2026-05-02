@@ -1,5 +1,4 @@
 import { BranchName, BRANCHES } from "@/types";
-import { CheckCircle2, Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface Props {
@@ -9,33 +8,29 @@ interface Props {
 
 export default function BranchUploadStatus({ uploadedBranches, missingBranches }: Props) {
   return (
-    <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
+    <div className="flex gap-3 overflow-x-auto pb-2 mb-8 scrollbar-thin scrollbar-thumb-[#c8e6c0] scrollbar-track-transparent">
       {BRANCHES.map((branch) => {
         const isUploaded = uploadedBranches.includes(branch);
-        
+
         return (
-          <div 
+          <div
             key={branch}
             className={cn(
-              "p-4 rounded-xl border flex flex-col items-center text-center transition-colors",
-              isUploaded 
-                ? "bg-success/5 border-success/20" 
-                : "bg-surface border-border opacity-70"
+              "flex items-center gap-2 px-4 py-2 rounded-full border-2 whitespace-nowrap transition-all duration-200 select-none text-sm font-medium",
+              isUploaded
+                ? "bg-[#064734] text-white border-[#064734] shadow-sm"
+                : "bg-white text-[#4a7c5f] border-[#c8e6c0] hover:border-[#064734]"
             )}
           >
-            <div className="font-medium text-sm text-text-primary mb-2">
-              {branch}
-            </div>
-            {isUploaded ? (
-              <div className="flex items-center text-xs text-success bg-success/10 px-2 py-1 rounded-full">
-                <span className="w-2 h-2 rounded-full bg-success animate-pulse mr-1.5" />
-                Uploaded
-              </div>
-            ) : (
-              <div className="flex items-center text-xs text-warning bg-warning/10 px-2 py-1 rounded-full">
-                <Clock className="w-3 h-3 mr-1.5" />
-                Pending
-              </div>
+            <span
+              className={cn(
+                "w-2 h-2 rounded-full flex-shrink-0",
+                isUploaded ? "bg-[#a8d5b5] animate-pulse" : "bg-[#c8e6c0]"
+              )}
+            />
+            {branch}
+            {isUploaded && (
+              <span className="text-[#a8d5b5] text-xs ml-1">✓</span>
             )}
           </div>
         );
