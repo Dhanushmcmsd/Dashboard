@@ -68,13 +68,13 @@ function LoginForm() {
           borderRight: "1px solid rgba(255,255,255,0.05)",
         }}
       >
-        {/* Logo — top */}
-        <div className="flex flex-col items-start gap-3">
+        {/* Logo top */}
+        <div>
           <img
-            src="/supra-pacific-rights-issue-logo.png"
-            alt="Supra Pacific Logo"
-            width={120}
-            height={120}
+            src="/logo.svg"
+            alt="Supra Pacific"
+            width={80}
+            height={80}
             className="object-contain"
           />
         </div>
@@ -112,13 +112,7 @@ function LoginForm() {
 
           {/* Mobile logo */}
           <div className="flex lg:hidden items-center gap-3 mb-10">
-            <img
-              src="/supra-pacific-rights-issue-logo.png"
-              alt="Supra Pacific"
-              width={48}
-              height={48}
-              className="object-contain"
-            />
+            <img src="/logo.svg" alt="Supra Pacific" width={40} height={40} className="object-contain" />
             <span className="text-base font-semibold text-white">Supra Pacific</span>
           </div>
 
