@@ -3,7 +3,6 @@ import { authOptions } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import AdminNav from "@/components/admin/AdminNav";
 import EventsProvider from "@/components/providers/EventsProvider";
-import Image from "next/image";
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const session = await getServerSession(authOptions);
@@ -13,9 +12,9 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   }
 
   return (
-    <div className="min-h-screen flex flex-col md:flex-row bg-[#0D1117]">
+    <div className="min-h-screen flex flex-col md:flex-row bg-background">
       {/* Sidebar */}
-      <aside className="w-full md:w-64 bg-surface border-r border-border shrink-0 flex flex-col">
+      <aside className="w-full md:w-64 bg-surface border-r border-border shrink-0 flex flex-col shadow-[2px_0_12px_rgba(6,71,52,0.06)]">
         <div className="p-6 border-b border-border">
           <div className="flex items-center gap-3 mb-1">
             <img
@@ -26,11 +25,11 @@ export default async function AdminLayout({ children }: { children: React.ReactN
               className="object-contain"
             />
             <div>
-              <p className="text-sm font-bold text-white leading-tight">Supra Pacific</p>
+              <p className="text-sm font-bold text-primary leading-tight">Supra Pacific</p>
               <p className="text-[10px] text-text-muted uppercase tracking-widest">Management Information System</p>
             </div>
           </div>
-          <p className="text-[10px] text-text-muted uppercase tracking-wider mt-3 pl-0.5 border-l-2 border-accent pl-2">
+          <p className="text-[10px] text-text-muted uppercase tracking-wider mt-3 pl-2 border-l-2 border-primary">
             Admin Portal
           </p>
         </div>
@@ -40,15 +39,15 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         </div>
 
         <div className="p-4 border-t border-border">
-          <div className="bg-elevated rounded-lg p-3">
-            <p className="text-sm font-medium text-text-primary truncate">{session.user.name}</p>
+          <div className="bg-elevated rounded-2xl p-3">
+            <p className="text-sm font-semibold text-text-primary truncate">{session.user.name}</p>
             <p className="text-xs text-text-muted truncate">{session.user.email}</p>
           </div>
         </div>
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 p-6 md:p-8 overflow-y-auto">
+      <main className="flex-1 p-6 md:p-8 overflow-y-auto bg-background">
         <div className="max-w-6xl mx-auto">
           {children}
         </div>

@@ -22,17 +22,17 @@ import EventsProvider from "@/components/providers/EventsProvider";
 import { signOut } from "next-auth/react";
 
 const branchItems = [
-  { name: "Supermarket",  icon: ShoppingCart, path: "/management/supermarket"   },
-  { name: "Gold Loan",    icon: Coins,        path: "/management/gold-loan"     },
-  { name: "ML Loan",      icon: BarChart2,    path: "/management/ml-loan"       },
-  { name: "Vehicle Loan", icon: CarFront,     path: "/management/vehicle-loan"  },
-  { name: "Personal Loan",icon: UserCircle2,  path: "/management/personal-loan" },
+  { name: "Supermarket",   icon: ShoppingCart, path: "/management/supermarket"   },
+  { name: "Gold Loan",     icon: Coins,        path: "/management/gold-loan"     },
+  { name: "ML Loan",       icon: BarChart2,    path: "/management/ml-loan"       },
+  { name: "Vehicle Loan",  icon: CarFront,     path: "/management/vehicle-loan"  },
+  { name: "Personal Loan", icon: UserCircle2,  path: "/management/personal-loan" },
 ] as const;
 
 const topNavItems = [
-  { name: "Daily",   icon: Calendar,    path: "/management/daily"   },
+  { name: "Daily",   icon: Calendar,     path: "/management/daily"   },
   { name: "Monthly", icon: CalendarDays, path: "/management/monthly" },
-  { name: "Alerts",  icon: Bell,        path: "/management/alerts"  },
+  { name: "Alerts",  icon: Bell,         path: "/management/alerts"  },
 ] as const;
 
 const BRANCH_PATHS = branchItems.map((b) => b.path);
@@ -97,7 +97,7 @@ export default function ManagementLayout({
 
   if (status === "loading") {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#0D1117]">
+      <div className="min-h-screen flex items-center justify-center bg-background">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
     );
@@ -118,7 +118,7 @@ export default function ManagementLayout({
         width:    dropdownPos.width,
         zIndex:   9999,
       }}
-      className="bg-surface border border-border rounded-xl shadow-2xl overflow-hidden"
+      className="bg-surface border border-border rounded-2xl shadow-[0_8px_32px_rgba(6,71,52,0.12)] overflow-hidden"
     >
       {branchItems.map((item) => {
         const Icon     = item.icon;
@@ -133,8 +133,8 @@ export default function ManagementLayout({
             className={cn(
               "w-full flex items-center gap-3 px-4 py-3 text-sm font-medium transition-colors text-left",
               isActive
-                ? "bg-primary/10 text-primary"
-                : "text-text-muted hover:text-text-primary hover:bg-elevated"
+                ? "bg-accent text-primary font-semibold"
+                : "text-text-muted hover:text-primary hover:bg-elevated"
             )}
           >
             <Icon className="w-4 h-4 flex-shrink-0" />
@@ -146,8 +146,8 @@ export default function ManagementLayout({
   );
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#0D1117]">
-      <header className="bg-surface border-b border-border sticky top-0 z-40">
+    <div className="min-h-screen flex flex-col bg-background">
+      <header className="bg-surface border-b border-border sticky top-0 z-40 shadow-[0_2px_12px_rgba(6,71,52,0.06)]">
         {/* Top bar */}
         <div className="max-w-7xl mx-auto px-4 md:px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -159,20 +159,20 @@ export default function ManagementLayout({
               className="object-contain"
             />
             <div>
-              <p className="text-sm font-bold text-white leading-tight">Supra Pacific</p>
+              <p className="text-sm font-bold text-primary leading-tight">Supra Pacific</p>
               <p className="text-[10px] text-text-muted uppercase tracking-widest">Management Information System</p>
             </div>
           </div>
 
           <div className="flex items-center gap-4">
             <div className="hidden md:block text-right">
-              <p className="text-sm font-medium text-text-primary">{session.user.name}</p>
+              <p className="text-sm font-semibold text-text-primary">{session.user.name}</p>
               <p className="text-xs text-text-muted">Management</p>
             </div>
             <div className="w-px h-8 bg-border hidden md:block" />
             <button
               onClick={() => signOut({ callbackUrl: "/login" })}
-              className="p-2 text-text-muted hover:text-white hover:bg-elevated rounded-lg transition-colors"
+              className="p-2 text-text-muted hover:text-primary hover:bg-elevated rounded-xl transition-colors"
               title="Sign Out"
             >
               <LogOut className="w-5 h-5" />
@@ -180,7 +180,7 @@ export default function ManagementLayout({
           </div>
         </div>
 
-        {/* Tab bar — border-b underline style */}
+        {/* Tab bar */}
         <div className="max-w-7xl mx-auto px-4 md:px-6 overflow-x-auto hide-scrollbar">
           <nav className="flex space-x-0">
             {/* Branches trigger */}
@@ -191,7 +191,7 @@ export default function ManagementLayout({
                 "flex items-center gap-2 px-5 py-3 text-sm font-medium transition-all whitespace-nowrap border-b-2",
                 isBranchActive || dropdownOpen
                   ? "border-primary text-primary"
-                  : "border-transparent text-text-muted hover:text-text-primary hover:border-border"
+                  : "border-transparent text-text-muted hover:text-primary hover:border-border"
               )}
             >
               <ShoppingCart className="w-4 h-4" />
@@ -215,7 +215,7 @@ export default function ManagementLayout({
                     "flex items-center gap-2 px-5 py-3 text-sm font-medium transition-all whitespace-nowrap border-b-2",
                     isActive
                       ? "border-primary text-primary"
-                      : "border-transparent text-text-muted hover:text-text-primary hover:border-border"
+                      : "border-transparent text-text-muted hover:text-primary hover:border-border"
                   )}
                 >
                   <Icon className="w-4 h-4" />
@@ -227,15 +227,15 @@ export default function ManagementLayout({
         </div>
       </header>
 
-      <main className="flex-1 p-4 md:p-6 lg:p-8">
-        <div className="max-w-7xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500">
+      {/* Main content */}
+      <main className="flex-1 overflow-y-auto p-4 md:p-6">
+        <div className="max-w-7xl mx-auto">
           {children}
         </div>
       </main>
 
-      <EventsProvider>{null}</EventsProvider>
-
       {mounted && dropdownOpen && createPortal(dropdownPanel, document.body)}
+      <EventsProvider>{null}</EventsProvider>
     </div>
   );
 }
