@@ -4,7 +4,7 @@ import { useState, Suspense } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { Loader2 } from "lucide-react";
+import { Loader2, Mail, Lock, ArrowRight, CheckCircle2, AlertCircle } from "lucide-react";
 
 function LoginForm() {
   const router = useRouter();
@@ -22,52 +22,35 @@ function LoginForm() {
     setLoading(true);
 
     try {
-      const res = await fetch(
-        `/api/auth/check-email?email=${encodeURIComponent(email)}`
-      );
+      const res = await fetch(`/api/auth/check-email?email=${encodeURIComponent(email)}`);
       const data = await res.json();
 
       if (!data.success || !data.data.exists) {
-        setError("No account found with this email. Please sign up first.");
+        setError("No account found with this email.");
         setLoading(false);
         return;
       }
-
       if (!data.data.isActive) {
         setError("Your account is pending admin approval.");
         setLoading(false);
         return;
       }
-
       if (!data.data.passwordSet) {
-        setError(
-          "Password not set. Please check your email for the setup link."
-        );
+        setError("Password not set. Check your email for the setup link.");
         setLoading(false);
         return;
       }
 
-      const result = await signIn("credentials", {
-        redirect: false,
-        email,
-        password,
-      });
+      const result = await signIn("credentials", { redirect: false, email, password });
 
       if (result?.error) {
-        if (
-          result.error.toLowerCase().includes("password") ||
-          result.error === "CredentialsSignin"
-        ) {
-          setError("Incorrect password. Please try again.");
-        } else {
-          setError(result.error);
-        }
+        setError(result.error === "CredentialsSignin" ? "Incorrect password. Please try again." : result.error);
       } else if (result?.ok) {
         router.push("/auth/redirect");
       } else {
         setError("Sign in failed. Please try again.");
       }
-    } catch (err) {
+    } catch {
       setError("An unexpected error occurred. Please try again.");
     } finally {
       setLoading(false);
@@ -75,116 +58,202 @@ function LoginForm() {
   };
 
   return (
-    <div className="min-h-screen flex bg-[#0D1117]">
-      {/* Left panel — brand */}
-      <div className="hidden lg:flex flex-col justify-center items-center w-2/5 bg-[#111827] border-r border-[#1E2D42] px-12">
-        <img
-          src="/supra-pacific-rights-issue-logo.png"
-          alt="Supra Pacific"
-          width={88}
-          height={88}
-          className="object-contain mb-6"
-        />
-        <h1 className="text-2xl font-bold text-white text-center leading-snug">Supra Pacific</h1>
-        <p className="text-sm text-text-muted text-center mt-2 tracking-wide uppercase">
-          Management Information System
-        </p>
-        <div className="mt-10 w-16 h-0.5 bg-[#1E2D42] rounded-full" />
-        <p className="mt-6 text-xs text-text-muted text-center max-w-xs">
-          Secure portal for branch performance, AUM tracking, and financial analytics.
+    <div className="min-h-screen flex" style={{ background: "#080C14" }}>
+
+      {/* ── Left brand panel ── */}
+      <div
+        className="hidden lg:flex flex-col justify-between w-[420px] shrink-0 px-12 py-14"
+        style={{
+          background: "linear-gradient(160deg, #0D1525 0%, #0A1020 60%, #060A14 100%)",
+          borderRight: "1px solid rgba(255,255,255,0.05)",
+        }}
+      >
+        {/* Logo */}
+        <div>
+          <img
+            src="/supra-pacific-rights-issue-logo.jpg"
+            alt="Supra Pacific"
+            width={52}
+            height={52}
+            className="rounded-xl object-contain"
+            style={{ background: "rgba(255,255,255,0.04)", padding: "6px" }}
+          />
+        </div>
+
+        {/* Center copy */}
+        <div>
+          <div
+            className="inline-block text-xs font-semibold tracking-widest uppercase mb-5 px-3 py-1 rounded-full"
+            style={{ background: "rgba(59,130,246,0.1)", color: "#60A5FA", border: "1px solid rgba(59,130,246,0.2)" }}
+          >
+            Management Information System
+          </div>
+          <h1 className="text-4xl font-bold text-white leading-tight mb-4">
+            Supra Pacific
+          </h1>
+          <p className="text-sm leading-relaxed" style={{ color: "#64748B" }}>
+            Centralised branch performance, AUM tracking, and financial analytics — all in one place.
+          </p>
+
+          {/* Feature pills */}
+          <div className="mt-8 space-y-3">
+            {[
+              "Branch Performance Analytics",
+              "Gold Loan & AUM Tracking",
+              "Real-time Alerts",
+            ].map((f) => (
+              <div key={f} className="flex items-center gap-3">
+                <div className="w-1.5 h-1.5 rounded-full" style={{ background: "#3B82F6" }} />
+                <span className="text-xs" style={{ color: "#475569" }}>{f}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Footer */}
+        <p className="text-xs" style={{ color: "#1E293B" }}>
+          © {new Date().getFullYear()} Supra Pacific. All rights reserved.
         </p>
       </div>
 
-      {/* Right panel — form */}
-      <div className="flex-1 flex items-center justify-center p-8">
-        <div className="w-full max-w-sm">
+      {/* ── Right form panel ── */}
+      <div className="flex-1 flex items-center justify-center px-6 py-12">
+        <div className="w-full max-w-[400px]">
+
           {/* Mobile logo */}
-          <div className="flex lg:hidden flex-col items-center mb-8">
+          <div className="flex lg:hidden items-center gap-3 mb-10">
             <img
-              src="/supra-pacific-rights-issue-logo.png"
+              src="/supra-pacific-rights-issue-logo.jpg"
               alt="Supra Pacific"
-              width={56}
-              height={56}
-              className="object-contain mb-3"
+              width={36}
+              height={36}
+              className="rounded-lg object-contain"
+              style={{ background: "rgba(255,255,255,0.05)", padding: "4px" }}
             />
-            <h1 className="text-xl font-bold text-white">Supra Pacific</h1>
-            <p className="text-xs text-text-muted uppercase tracking-wider mt-1">Management Information System</p>
+            <span className="text-base font-semibold text-white">Supra Pacific</span>
           </div>
 
-          <h2 className="text-xl font-semibold text-white mb-1">Sign in</h2>
-          <p className="text-sm text-text-muted mb-8">Enter your credentials to continue.</p>
+          {/* Heading */}
+          <div className="mb-8">
+            <h2 className="text-2xl font-bold text-white mb-1">Welcome back</h2>
+            <p className="text-sm" style={{ color: "#475569" }}>Sign in to your account to continue</p>
+          </div>
 
+          {/* Alerts */}
           {msg === "password-set" && (
-            <div className="mb-6 p-4 bg-success/10 border border-success/20 text-success rounded-lg text-sm text-center">
-              Password set successfully! You can now log in.
+            <div
+              className="flex items-start gap-3 mb-6 p-4 rounded-xl text-sm"
+              style={{ background: "rgba(34,197,94,0.08)", border: "1px solid rgba(34,197,94,0.2)", color: "#4ADE80" }}
+            >
+              <CheckCircle2 className="w-4 h-4 mt-0.5 shrink-0" />
+              Password set successfully. You can now sign in.
             </div>
           )}
 
           {error && (
-            <div className="mb-6 p-4 bg-danger/10 border border-danger/20 text-danger rounded-lg text-sm text-center">
+            <div
+              className="flex items-start gap-3 mb-6 p-4 rounded-xl text-sm"
+              style={{ background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)", color: "#F87171" }}
+            >
+              <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
               {error}
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-5">
+          {/* Form */}
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Email */}
             <div>
-              <label className="block text-xs font-medium text-text-muted mb-1.5 uppercase tracking-wider">
+              <label className="block text-xs font-medium mb-2" style={{ color: "#64748B" }}>
                 Email address
               </label>
-              <input
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full bg-elevated border border-border rounded-lg px-4 py-2.5 text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
-                placeholder="you@company.com"
-                autoComplete="email"
-              />
+              <div className="relative">
+                <Mail
+                  className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4"
+                  style={{ color: "#334155" }}
+                />
+                <input
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="you@company.com"
+                  autoComplete="email"
+                  className="w-full pl-10 pr-4 py-3 rounded-xl text-sm text-white placeholder-slate-600 outline-none transition-all"
+                  style={{
+                    background: "#0D1525",
+                    border: "1px solid #1E293B",
+                  }}
+                  onFocus={(e) => (e.target.style.borderColor = "#3B82F6")}
+                  onBlur={(e) => (e.target.style.borderColor = "#1E293B")}
+                />
+              </div>
             </div>
 
+            {/* Password */}
             <div>
-              <label className="block text-xs font-medium text-text-muted mb-1.5 uppercase tracking-wider">
-                Password
-              </label>
-              <input
-                type="password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full bg-elevated border border-border rounded-lg px-4 py-2.5 text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
-                placeholder="••••••••"
-                autoComplete="current-password"
-              />
-              <div className="text-right mt-1.5">
+              <div className="flex items-center justify-between mb-2">
+                <label className="text-xs font-medium" style={{ color: "#64748B" }}>Password</label>
                 <Link
                   href="/forgot-password"
-                  className="text-xs text-text-muted hover:text-primary transition-colors"
+                  className="text-xs transition-colors"
+                  style={{ color: "#3B82F6" }}
                 >
                   Forgot password?
                 </Link>
               </div>
+              <div className="relative">
+                <Lock
+                  className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4"
+                  style={{ color: "#334155" }}
+                />
+                <input
+                  type="password"
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  autoComplete="current-password"
+                  className="w-full pl-10 pr-4 py-3 rounded-xl text-sm text-white placeholder-slate-600 outline-none transition-all"
+                  style={{
+                    background: "#0D1525",
+                    border: "1px solid #1E293B",
+                  }}
+                  onFocus={(e) => (e.target.style.borderColor = "#3B82F6")}
+                  onBlur={(e) => (e.target.style.borderColor = "#1E293B")}
+                />
+              </div>
             </div>
 
+            {/* Submit */}
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-primary hover:bg-primary-hover text-white font-medium py-2.5 rounded-lg transition-colors flex items-center justify-center disabled:opacity-70"
+              className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold text-white transition-all mt-2 disabled:opacity-60"
+              style={{ background: loading ? "#1D4ED8" : "#2563EB" }}
+              onMouseEnter={(e) => !loading && ((e.target as HTMLElement).style.background = "#1D4ED8")}
+              onMouseLeave={(e) => !loading && ((e.target as HTMLElement).style.background = "#2563EB")}
             >
               {loading ? (
-                <Loader2 className="w-5 h-5 animate-spin" />
+                <Loader2 className="w-4 h-4 animate-spin" />
               ) : (
-                "Sign in"
+                <>
+                  Sign in
+                  <ArrowRight className="w-4 h-4" />
+                </>
               )}
             </button>
           </form>
 
-          <p className="mt-6 text-center text-sm text-text-muted">
+          {/* Sign up */}
+          <p className="mt-6 text-center text-xs" style={{ color: "#334155" }}>
             Don&apos;t have an account?{" "}
             <Link
               href="/signup"
-              className="text-primary hover:text-primary-hover font-medium transition-colors"
+              className="font-medium transition-colors"
+              style={{ color: "#3B82F6" }}
             >
-              Sign up
+              Request access
             </Link>
           </p>
         </div>
@@ -197,8 +266,8 @@ export default function LoginPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen flex items-center justify-center bg-[#0D1117]">
-          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        <div className="min-h-screen flex items-center justify-center" style={{ background: "#080C14" }}>
+          <Loader2 className="w-8 h-8 animate-spin" style={{ color: "#3B82F6" }} />
         </div>
       }
     >
