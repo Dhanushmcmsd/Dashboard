@@ -22,11 +22,11 @@ import EventsProvider from "@/components/providers/EventsProvider";
 import { signOut } from "next-auth/react";
 
 const branchItems = [
-  { name: "Supermarket", icon: ShoppingCart, path: "/management/supermarket" },
-  { name: "Gold Loan",   icon: Coins,        path: "/management/gold-loan"   },
-  { name: "ML Loan",     icon: BarChart2,    path: "/management/ml-loan"     },
-  { name: "Vehicle Loan",icon: CarFront,     path: "/management/vehicle-loan"},
-  { name: "Personal Loan",icon: UserCircle2, path: "/management/personal-loan"},
+  { name: "Supermarket",  icon: ShoppingCart, path: "/management/supermarket"   },
+  { name: "Gold Loan",    icon: Coins,        path: "/management/gold-loan"     },
+  { name: "ML Loan",      icon: BarChart2,    path: "/management/ml-loan"       },
+  { name: "Vehicle Loan", icon: CarFront,     path: "/management/vehicle-loan"  },
+  { name: "Personal Loan",icon: UserCircle2,  path: "/management/personal-loan" },
 ] as const;
 
 const topNavItems = [
@@ -57,10 +57,8 @@ export default function ManagementLayout({
 
   const isBranchActive = BRANCH_PATHS.some((p) => pathname === p);
 
-  // Portal needs browser
   useEffect(() => { setMounted(true); }, []);
 
-  // Position dropdown below the trigger button using page-absolute coords
   const openDropdown = useCallback(() => {
     if (!triggerRef.current) return;
     const rect = triggerRef.current.getBoundingClientRect();
@@ -72,7 +70,6 @@ export default function ManagementLayout({
     setDropdownOpen(true);
   }, []);
 
-  // Close on outside click
   useEffect(() => {
     if (!dropdownOpen) return;
     function handleMouseDown(e: MouseEvent) {
@@ -87,7 +84,6 @@ export default function ManagementLayout({
     return () => document.removeEventListener("mousedown", handleMouseDown);
   }, [dropdownOpen]);
 
-  // Close on scroll / resize so it doesn't float in the wrong place
   useEffect(() => {
     if (!dropdownOpen) return;
     const close = () => setDropdownOpen(false);
@@ -101,7 +97,7 @@ export default function ManagementLayout({
 
   if (status === "loading") {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#0A0A0C]">
+      <div className="min-h-screen flex items-center justify-center bg-[#0D1117]">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
     );
@@ -150,13 +146,23 @@ export default function ManagementLayout({
   );
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#0A0A0C]">
+    <div className="min-h-screen flex flex-col bg-[#0D1117]">
       <header className="bg-surface border-b border-border sticky top-0 z-40">
         {/* Top bar */}
         <div className="max-w-7xl mx-auto px-4 md:px-6 h-16 flex items-center justify-between">
-          <h1 className="text-xl font-bold text-white tracking-tight">
-            Branch<span className="text-primary">Sync</span>
-          </h1>
+          <div className="flex items-center gap-3">
+            <img
+              src="/supra-pacific-rights-issue-logo.png"
+              alt="Supra Pacific"
+              width={32}
+              height={32}
+              className="object-contain"
+            />
+            <div>
+              <p className="text-sm font-bold text-white leading-tight">Supra Pacific</p>
+              <p className="text-[10px] text-text-muted uppercase tracking-widest">Management Information System</p>
+            </div>
+          </div>
 
           <div className="flex items-center gap-4">
             <div className="hidden md:block text-right">
@@ -174,19 +180,18 @@ export default function ManagementLayout({
           </div>
         </div>
 
-        {/* Tab bar — overflow-x-auto but dropdown escapes via portal */}
-        <div className="max-w-7xl mx-auto px-4 md:px-6 overflow-x-auto hide-scrollbar border-t border-border/50">
-          <nav className="flex space-x-1 py-2">
-
+        {/* Tab bar — border-b underline style */}
+        <div className="max-w-7xl mx-auto px-4 md:px-6 overflow-x-auto hide-scrollbar">
+          <nav className="flex space-x-0">
             {/* Branches trigger */}
             <button
               ref={triggerRef}
               onClick={() => dropdownOpen ? setDropdownOpen(false) : openDropdown()}
               className={cn(
-                "flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all whitespace-nowrap",
+                "flex items-center gap-2 px-5 py-3 text-sm font-medium transition-all whitespace-nowrap border-b-2",
                 isBranchActive || dropdownOpen
-                  ? "bg-primary/10 text-primary"
-                  : "text-text-muted hover:text-text-primary hover:bg-elevated"
+                  ? "border-primary text-primary"
+                  : "border-transparent text-text-muted hover:text-text-primary hover:border-border"
               )}
             >
               <ShoppingCart className="w-4 h-4" />
@@ -207,10 +212,10 @@ export default function ManagementLayout({
                   key={item.name}
                   href={item.path}
                   className={cn(
-                    "flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all whitespace-nowrap",
+                    "flex items-center gap-2 px-5 py-3 text-sm font-medium transition-all whitespace-nowrap border-b-2",
                     isActive
-                      ? "bg-primary/10 text-primary"
-                      : "text-text-muted hover:text-text-primary hover:bg-elevated"
+                      ? "border-primary text-primary"
+                      : "border-transparent text-text-muted hover:text-text-primary hover:border-border"
                   )}
                 >
                   <Icon className="w-4 h-4" />
@@ -230,7 +235,6 @@ export default function ManagementLayout({
 
       <EventsProvider>{null}</EventsProvider>
 
-      {/* Portal: dropdown renders into body, escaping all overflow/z-index containers */}
       {mounted && dropdownOpen && createPortal(dropdownPanel, document.body)}
     </div>
   );
