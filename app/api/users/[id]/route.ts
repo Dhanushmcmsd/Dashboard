@@ -3,8 +3,14 @@ import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth-guard";
 import { successResponse, errorResponse, validationError } from "@/lib/api-utils";
 import { UpdateUserSchema } from "@/lib/validations";
-import { sendDeactivationEmail, sendReactivationEmail } from "@/lib/email";
+import {
+  sendDeactivationEmail,
+  sendReactivationEmail,
+  sendApprovalWithPasswordEmail,
+} from "@/lib/email";
 import { createAuditLog } from "@/lib/audit";
+import crypto from "crypto";
+import bcrypt from "bcryptjs";
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -45,7 +51,6 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       },
     });
 
-    // Determine audit action: ROLE_CHANGED takes priority, else USER_UPDATED
     const roleChanged = result.data.role && result.data.role !== existingUser.role;
     const auditAction = roleChanged ? "ROLE_CHANGED" : "USER_UPDATED";
 
@@ -61,10 +66,26 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       },
     });
 
-    // Send emails based on isActive changes
+    // Handle isActive transitions
     if (existingUser.isActive !== user.isActive) {
       if (user.isActive) {
-        await sendReactivationEmail(user.email, user.name);
+        // First-time approval: user never set a password → send set-password link
+        if (!existingUser.passwordSet) {
+          const rawToken  = crypto.randomBytes(32).toString("hex");
+          const tokenHash = await bcrypt.hash(rawToken, 10);
+          const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 h
+
+          await prisma.passwordResetToken.deleteMany({ where: { userId: user.id } });
+          await prisma.passwordResetToken.create({
+            data: { userId: user.id, tokenHash, expiresAt },
+          });
+
+          const setPasswordLink = `${process.env.NEXTAUTH_URL}/reset-password?token=${rawToken}&uid=${user.id}`;
+          await sendApprovalWithPasswordEmail(user.email, user.name, setPasswordLink);
+        } else {
+          // Re-activation of an existing user who already has a password
+          await sendReactivationEmail(user.email, user.name);
+        }
       } else {
         await sendDeactivationEmail(user.email, user.name);
       }
@@ -96,7 +117,6 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
       return errorResponse("User not found", 404);
     }
 
-    // Soft delete
     await prisma.user.update({
       where: { id: resolvedParams.id },
       data: { isActive: false },

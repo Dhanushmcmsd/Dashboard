@@ -3,7 +3,10 @@ import { DailyDashboardData } from "@/types";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
-const FROM_EMAIL = "BranchSync <onboarding@resend.dev>";
+// Use RESEND_FROM_EMAIL env var (your verified domain address).
+// Fall back to onboarding@resend.dev ONLY for local dev / testing.
+const FROM_EMAIL =
+  process.env.RESEND_FROM_EMAIL ?? "BranchSync <onboarding@resend.dev>";
 
 function fmt(n: number) {
   return new Intl.NumberFormat("en-IN", { maximumFractionDigits: 0 }).format(n);
@@ -49,6 +52,46 @@ export async function sendReactivationEmail(email: string, name: string) {
     });
   } catch (error) {
     console.error("Error sending reactivation email:", error);
+  }
+}
+
+/**
+ * Sent when an admin approves a brand-new user for the first time.
+ * Includes a password-set link so they can immediately log in.
+ */
+export async function sendApprovalWithPasswordEmail(
+  email: string,
+  name: string,
+  setPasswordLink: string
+) {
+  try {
+    await resend.emails.send({
+      from: FROM_EMAIL,
+      to: email,
+      subject: "Your BranchSync account has been approved",
+      html: `
+        <div style="font-family:sans-serif;max-width:520px;">
+          <h2 style="color:#2563EB;">Welcome to BranchSync, ${escape(name || "there")}!</h2>
+          <p>Your account has been <strong>approved</strong> by the administrator.</p>
+          <p>To get started, set your password using the button below.
+             This link expires in <strong>24 hours</strong>.</p>
+          <p style="margin:24px 0;">
+            <a href="${setPasswordLink}"
+               style="background:#2563EB;color:#fff;padding:12px 24px;border-radius:8px;
+                      text-decoration:none;font-weight:600;display:inline-block;">
+              Set My Password
+            </a>
+          </p>
+          <p style="color:#888;font-size:13px;">
+            If the button doesn't work, copy and paste this link into your browser:<br/>
+            <a href="${setPasswordLink}" style="color:#2563EB;word-break:break-all;">${setPasswordLink}</a>
+          </p>
+          <p style="color:#888;font-size:12px;margin-top:24px;">BranchSync &bull; Do not reply to this email.</p>
+        </div>
+      `,
+    });
+  } catch (error) {
+    console.error("Error sending approval+password email:", error);
   }
 }
 
@@ -167,9 +210,6 @@ export async function sendDailySummaryEmail(
   }
 }
 
-// ───────────────────────────────────────────────────────────────────────────
-// Feature 7: Daily Upload Status Email (for ADMIN users)
-// ───────────────────────────────────────────────────────────────────────────
 export async function sendDailyStatusEmail(
   email: string,
   name: string,
@@ -187,12 +227,10 @@ export async function sendDailyStatusEmail(
       (data.totalUploaded / Math.max(data.totalBranches, 1)) * 100
     );
 
-    // Progress bar visual
-    const barFilled = Math.round(completionPct / 5); // 0-20 blocks
+    const barFilled = Math.round(completionPct / 5);
     const progressBar =
       "&#9608;".repeat(barFilled) + "&#9617;".repeat(20 - barFilled);
 
-    // Uploaded rows
     const uploadedRows = data.uploadedBranches
       .map(
         (b) => `
@@ -208,7 +246,6 @@ export async function sendDailyStatusEmail(
       )
       .join("");
 
-    // Missing rows
     const missingRows = data.missingBranches
       .map(
         (b) => `
@@ -230,31 +267,20 @@ export async function sendDailyStatusEmail(
 
     const html = `
       <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#0A0A0C;color:#e5e5e5;padding:28px;border-radius:14px;max-width:560px;">
-
-        <!-- Header -->
         <div style="margin-bottom:20px;">
           <h2 style="color:#fff;margin:0 0 4px;font-size:20px;">&#128203; BranchSync Upload Status</h2>
           <p style="color:#666;margin:0;font-size:13px;">${escape(data.dateKey)}</p>
         </div>
-
-        <!-- Greeting -->
         <p style="font-size:14px;color:#ccc;">Hi ${escape(name || "Admin")},</p>
-        <p style="font-size:14px;color:#ccc;margin-top:0;">
-          Here is the branch upload status for today.
-        </p>
-
-        <!-- Status headline -->
+        <p style="font-size:14px;color:#ccc;margin-top:0;">Here is the branch upload status for today.</p>
         <div style="background:#111116;border:1px solid #2a2a35;border-radius:10px;padding:14px 16px;margin-bottom:20px;">
           ${statusHeadline}
-          <!-- Progress bar -->
           <div style="margin-top:10px;">
             <div style="font-family:monospace;font-size:12px;color:${
               allComplete ? "#4ade80" : "#f97316"
             };letter-spacing:1px;">${progressBar} ${completionPct}%</div>
           </div>
         </div>
-
-        <!-- Branch table -->
         <table style="width:100%;border-collapse:collapse;font-size:13px;background:#111116;border:1px solid #2a2a35;border-radius:10px;overflow:hidden;">
           <thead>
             <tr style="background:#18181f;">
@@ -262,25 +288,17 @@ export async function sendDailyStatusEmail(
               <th style="padding:10px 14px;text-align:right;color:#666;font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:0.5px;">Status</th>
             </tr>
           </thead>
-          <tbody>
-            ${uploadedRows}
-            ${missingRows}
-          </tbody>
+          <tbody>${uploadedRows}${missingRows}</tbody>
         </table>
-
-        <!-- Summary line -->
         <p style="font-size:13px;color:#888;margin-top:16px;">
           <strong style="color:#e5e5e5;">${data.totalUploaded} of ${data.totalBranches} branches</strong> uploaded today.
         </p>
-
-        <!-- CTA -->
         <p style="margin-top:20px;">
           <a href="${process.env.NEXTAUTH_URL}/management/daily"
              style="background:#2563EB;color:#fff;padding:10px 22px;border-radius:8px;text-decoration:none;font-weight:600;font-size:13px;display:inline-block;">
             View Dashboard &#8594;
           </a>
         </p>
-
         <p style="font-size:11px;color:#444;margin-top:24px;border-top:1px solid #1a1a1e;padding-top:12px;">BranchSync &bull; Automated notification &bull; Do not reply</p>
       </div>
     `;
