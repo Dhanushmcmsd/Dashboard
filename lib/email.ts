@@ -20,8 +20,19 @@ import { DailyDashboardData } from "@/types";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
-const FROM_EMAIL =
-  process.env.RESEND_FROM_EMAIL ?? "BranchSync <onboarding@resend.dev>";
+// FIX: No silent fallback to onboarding@resend.dev — that address only delivers
+// to the Resend account owner's email on free plans, silently dropping all others.
+// RESEND_FROM_EMAIL must be set to a verified domain address, e.g.:
+//   noreply@yourdomain.com  (after verifying your domain on resend.com/domains)
+if (!process.env.RESEND_FROM_EMAIL) {
+  console.warn(
+    "[email] WARNING: RESEND_FROM_EMAIL is not set. " +
+    "Emails will fail or be silently dropped. " +
+    "Set RESEND_FROM_EMAIL to a verified sender address (e.g. noreply@yourdomain.com)."
+  );
+}
+
+const FROM_EMAIL = process.env.RESEND_FROM_EMAIL ?? "";
 
 const APP_URL = process.env.NEXTAUTH_URL ?? process.env.NEXT_PUBLIC_APP_URL ?? "";
 
@@ -73,6 +84,13 @@ async function sendEmail(
   payload: EmailPayload,
   maxRetries = 3
 ): Promise<SendResult> {
+  // Guard: fail fast if FROM_EMAIL is not configured
+  if (!FROM_EMAIL) {
+    const errMsg = "RESEND_FROM_EMAIL env var is not set — cannot send email";
+    console.error(`[email] ✗ FAILED | type=${payload.type} to=${payload.to} error=${errMsg}`);
+    return { success: false, emailType: payload.type, to: payload.to, attempts: 0, error: errMsg };
+  }
+
   let lastError: string = "";
 
   for (let attempt = 1; attempt <= maxRetries; attempt++) {

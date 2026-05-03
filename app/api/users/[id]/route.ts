@@ -90,15 +90,16 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
               data: { userId: user.id, tokenHash, expiresAt },
             });
 
-            // BUG FIX 1: use getBaseUrl() — never "undefined/reset-password"
-            // BUG FIX 2: path is /reset-password (the only page that exists)
             const baseUrl = getBaseUrl(req);
             const setPasswordLink = `${baseUrl}/reset-password?token=${rawToken}&uid=${user.id}`;
 
-            // BUG FIX 3: wrapped in try/catch — email failure is non-fatal,
-            // user is already approved in DB so approval is not lost
-            await sendApprovalWithPasswordEmail(user.email, user.name, setPasswordLink);
-            console.info(`[approval] Set-password email sent to ${user.email}`);
+            // FIX: capture return value — only log success when email actually sent
+            const emailSent = await sendApprovalWithPasswordEmail(user.email, user.name, setPasswordLink);
+            if (emailSent) {
+              console.info(`[approval] Set-password email sent to ${user.email}`);
+            } else {
+              console.error(`[approval] FAILED to send set-password email to ${user.email} — check RESEND_FROM_EMAIL and Resend domain configuration`);
+            }
           } catch (emailErr) {
             console.error(`[approval] Failed to send set-password email to ${user.email}:`, emailErr);
             // Don't return error — user is approved, admin should retry sending the link manually
@@ -106,16 +107,26 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
         } else {
           // Re-activation of user who already has a password
           try {
-            await sendReactivationEmail(user.email, user.name);
+            const emailSent = await sendReactivationEmail(user.email, user.name);
+            if (emailSent) {
+              console.info(`[reactivation] Email sent to ${user.email}`);
+            } else {
+              console.error(`[reactivation] FAILED to send reactivation email to ${user.email}`);
+            }
           } catch (emailErr) {
-            console.error(`[approval] Failed to send reactivation email to ${user.email}:`, emailErr);
+            console.error(`[reactivation] Failed to send email to ${user.email}:`, emailErr);
           }
         }
       } else {
         try {
-          await sendDeactivationEmail(user.email, user.name);
+          const emailSent = await sendDeactivationEmail(user.email, user.name);
+          if (emailSent) {
+            console.info(`[deactivation] Email sent to ${user.email}`);
+          } else {
+            console.error(`[deactivation] FAILED to send deactivation email to ${user.email}`);
+          }
         } catch (emailErr) {
-          console.error(`[approval] Failed to send deactivation email to ${user.email}:`, emailErr);
+          console.error(`[deactivation] Failed to send email to ${user.email}:`, emailErr);
         }
       }
     }
@@ -161,7 +172,12 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
 
     if (user.isActive) {
       try {
-        await sendDeactivationEmail(user.email, user.name);
+        const emailSent = await sendDeactivationEmail(user.email, user.name);
+        if (emailSent) {
+          console.info(`[delete] Deactivation email sent to ${user.email}`);
+        } else {
+          console.error(`[delete] FAILED to send deactivation email to ${user.email}`);
+        }
       } catch (emailErr) {
         console.error(`[delete] Failed to send deactivation email to ${user.email}:`, emailErr);
       }
