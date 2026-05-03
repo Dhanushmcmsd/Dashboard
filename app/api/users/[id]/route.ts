@@ -12,6 +12,15 @@ import { createAuditLog } from "@/lib/audit";
 import crypto from "crypto";
 import bcrypt from "bcryptjs";
 
+/** Resolve app base URL — never returns undefined */
+function getBaseUrl(req: Request): string {
+  if (process.env.NEXTAUTH_URL) return process.env.NEXTAUTH_URL.replace(/\/$/, "");
+  if (process.env.NEXT_PUBLIC_APP_URL) return process.env.NEXT_PUBLIC_APP_URL.replace(/\/$/, "");
+  // Fallback: derive from the incoming request
+  const url = new URL(req.url);
+  return `${url.protocol}//${url.host}`;
+}
+
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const auth = await requireAuth(["ADMIN"]);
@@ -69,25 +78,45 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     // Handle isActive transitions
     if (existingUser.isActive !== user.isActive) {
       if (user.isActive) {
-        // First-time approval: user never set a password → send set-password link
         if (!existingUser.passwordSet) {
-          const rawToken  = crypto.randomBytes(32).toString("hex");
-          const tokenHash = await bcrypt.hash(rawToken, 10);
-          const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 h
+          // First-time approval: generate secure token and email set-password link
+          try {
+            const rawToken  = crypto.randomBytes(32).toString("hex");
+            const tokenHash = await bcrypt.hash(rawToken, 10);
+            const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
 
-          await prisma.passwordResetToken.deleteMany({ where: { userId: user.id } });
-          await prisma.passwordResetToken.create({
-            data: { userId: user.id, tokenHash, expiresAt },
-          });
+            await prisma.passwordResetToken.deleteMany({ where: { userId: user.id } });
+            await prisma.passwordResetToken.create({
+              data: { userId: user.id, tokenHash, expiresAt },
+            });
 
-          const setPasswordLink = `${process.env.NEXTAUTH_URL}/reset-password?token=${rawToken}&uid=${user.id}`;
-          await sendApprovalWithPasswordEmail(user.email, user.name, setPasswordLink);
+            // BUG FIX 1: use getBaseUrl() — never "undefined/reset-password"
+            // BUG FIX 2: path is /reset-password (the only page that exists)
+            const baseUrl = getBaseUrl(req);
+            const setPasswordLink = `${baseUrl}/reset-password?token=${rawToken}&uid=${user.id}`;
+
+            // BUG FIX 3: wrapped in try/catch — email failure is non-fatal,
+            // user is already approved in DB so approval is not lost
+            await sendApprovalWithPasswordEmail(user.email, user.name, setPasswordLink);
+            console.info(`[approval] Set-password email sent to ${user.email}`);
+          } catch (emailErr) {
+            console.error(`[approval] Failed to send set-password email to ${user.email}:`, emailErr);
+            // Don't return error — user is approved, admin should retry sending the link manually
+          }
         } else {
-          // Re-activation of an existing user who already has a password
-          await sendReactivationEmail(user.email, user.name);
+          // Re-activation of user who already has a password
+          try {
+            await sendReactivationEmail(user.email, user.name);
+          } catch (emailErr) {
+            console.error(`[approval] Failed to send reactivation email to ${user.email}:`, emailErr);
+          }
         }
       } else {
-        await sendDeactivationEmail(user.email, user.name);
+        try {
+          await sendDeactivationEmail(user.email, user.name);
+        } catch (emailErr) {
+          console.error(`[approval] Failed to send deactivation email to ${user.email}:`, emailErr);
+        }
       }
     }
 
@@ -131,7 +160,11 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
     });
 
     if (user.isActive) {
-      await sendDeactivationEmail(user.email, user.name);
+      try {
+        await sendDeactivationEmail(user.email, user.name);
+      } catch (emailErr) {
+        console.error(`[delete] Failed to send deactivation email to ${user.email}:`, emailErr);
+      }
     }
 
     return successResponse({ success: true, message: "User deactivated" });
