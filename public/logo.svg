@@ -1,34 +1,46 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 290 290" width="290" height="290">
 
+  <!-- Red cluster spans x:49-241, y:49-241 -->
+  <!-- Bracket thickness: 28px, Bracket arm length: 70px -->
+  <!-- Each bracket inner-corner aligns with outer corner of red cluster -->
+
   <!-- Top-left corner bracket -->
-  <rect x="20" y="20" width="70" height="28" fill="#1a3a6b"/>
-  <rect x="20" y="20" width="28" height="70" fill="#1a3a6b"/>
+  <!-- horizontal: starts at outer-left (x=21), ends at x=49+70=119, y=21, height=28 → inner bottom edge at y=49 -->
+  <rect x="21" y="21" width="70" height="28" fill="#1a3a6b"/>
+  <!-- vertical: x=21, starts at y=21, down 70px → inner right edge at x=49 -->
+  <rect x="21" y="21" width="28" height="70" fill="#1a3a6b"/>
 
   <!-- Top-right corner bracket -->
-  <rect x="200" y="20" width="70" height="28" fill="#1a3a6b"/>
-  <rect x="242" y="20" width="28" height="70" fill="#1a3a6b"/>
+  <!-- horizontal: ends at x=269 (21+248), starts at 269-70=199, top at y=21 -->
+  <rect x="199" y="21" width="70" height="28" fill="#1a3a6b"/>
+  <!-- vertical: right edge at x=269, width 28 → x=241, from y=21 down 70 -->
+  <rect x="241" y="21" width="28" height="70" fill="#1a3a6b"/>
 
   <!-- Bottom-left corner bracket -->
-  <rect x="20" y="242" width="70" height="28" fill="#1a3a6b"/>
-  <rect x="20" y="200" width="28" height="70" fill="#1a3a6b"/>
+  <!-- horizontal: bottom edge at y=269, height 28 → top at y=241, x=21 width 70 -->
+  <rect x="21" y="241" width="70" height="28" fill="#1a3a6b"/>
+  <!-- vertical: x=21 width 28, bottom at y=269 → top at y=199 (269-70) -->
+  <rect x="21" y="199" width="28" height="70" fill="#1a3a6b"/>
 
   <!-- Bottom-right corner bracket -->
-  <rect x="200" y="242" width="70" height="28" fill="#1a3a6b"/>
-  <rect x="242" y="200" width="28" height="70" fill="#1a3a6b"/>
+  <!-- horizontal: x=199, bottom at y=269 -->
+  <rect x="199" y="241" width="70" height="28" fill="#1a3a6b"/>
+  <!-- vertical: x=241, top at y=199 -->
+  <rect x="241" y="199" width="28" height="70" fill="#1a3a6b"/>
 
   <!-- Centre red square (sharp corners) -->
   <rect x="113" y="113" width="64" height="64" fill="#e52b2b"/>
 
-  <!-- Top-left red square: bottom-right corner aligns with centre top-left corner (113,113) -->
+  <!-- Top-left red square -->
   <rect x="49" y="49" width="64" height="64" fill="#e52b2b"/>
 
-  <!-- Top-right red square: bottom-left corner aligns with centre top-right corner (177,113) -->
+  <!-- Top-right red square -->
   <rect x="177" y="49" width="64" height="64" fill="#e52b2b"/>
 
-  <!-- Bottom-left red square: top-right corner aligns with centre bottom-left corner (113,177) -->
+  <!-- Bottom-left red square -->
   <rect x="49" y="177" width="64" height="64" fill="#e52b2b"/>
 
-  <!-- Bottom-right red square: top-left corner aligns with centre bottom-right corner (177,177) -->
+  <!-- Bottom-right red square -->
   <rect x="177" y="177" width="64" height="64" fill="#e52b2b"/>
 
 </svg>
