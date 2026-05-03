@@ -1,84 +1,58 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 290 290" width="290" height="290">
 
   <!--
-    Layout:
-    - Canvas: 290x290
-    - Red squares: 58x58 each
-    - Red grid starts at x=58, y=58 (top-left square)
-    - Gap between bracket inner edge and red squares: 10px
-    - So bracket inner corner is at x=48, y=48
-    - Bracket thickness: 26px
-    - Bracket arm length: 68px
-    - Bracket outer corner: x=48-26=22, y=48-26=22
-    - Bracket arm reaches: 22+68=90 (stops before red square edge at 58, giving gap)
+    Pixel-accurate from reference image (286x358, content 248x248):
+    Canvas      : 290x290, transparent background
+    Navy color  : #083674  (sampled rgb(8,54,116))
+    Red color   : #e8231e  (vivid red, JPEG-compressed in reference)
 
-    Red grid (5 squares, 58x58, gap 16px between):
-      TL: (58, 58)
-      TR: (174, 58)   [58 + 58 + 58 = 174... let me compute properly]
+    Bracket L-shape (each corner):
+      arm thickness : 30px
+      arm length    : 50px (outer corner to inner corner)
+      inner corner  : aligns with outer corner of nearest red square
 
-    Total red span: 3*58 + 2*gap = 174 + 2*16 = 206
-    Start: (290-206)/2 = 42
-    Squares at: 42, 42+58+16=116, 42+116+16=174  -- only 3 cols
-
-    For 5-square cross pattern (not 3x3 grid):
-      Centre:  (116, 116)  size 58
-      TL:      (42,  42)   size 58   -> right edge = 100
-      TR:      (190, 42)   size 58   -> left edge = 190
-      BL:      (42,  190)  size 58
-      BR:      (190, 190)  size 58
-
-    Gap between TL square right edge (100) and centre left edge (116) = 16px ✓
-    Gap = 16px between all adjacent squares ✓
-
-    Bracket inner corner: 10px gap from red square outer corner
-      TL bracket inner corner: (42-10, 42-10) = (32, 32)
-      Bracket thickness: 24px -> outer corner at (32-24, 32-24) = (8, 8)
-      Arm length: 66px -> arm reaches 8+66=74 (stops before red square edge at 42) ✓
-
-    BR bracket inner corner: (248+10, 248+10) = (258, 258)
-      outer corner: (258+24, 258+24) = (282, 282)
-      arm starts at 282-66=216 -> stops before red square left edge at 248 ✓
+    Red squares (49x49, touching with 1px gap):
+      TL : (71,  71 )
+      TR : (170, 71 )
+      C  : (121, 121)
+      BL : (71,  170)
+      BR : (170, 170)
   -->
 
-  <!-- Top-left corner bracket -->
-  <!-- horizontal arm: (8,8) to (74,8), height 24 -->
-  <rect x="8"  y="8"  width="66" height="24" fill="#0e3e7a"/>
-  <!-- vertical arm: (8,8) to (8,74), width 24 -->
-  <rect x="8"  y="8"  width="24" height="66" fill="#0e3e7a"/>
+  <!-- ═══ TOP-LEFT BRACKET ═══ -->
+  <!-- horiz arm: x=21 to 71, y=21 to 51 -->
+  <rect x="21" y="21" width="50" height="30" fill="#083674"/>
+  <!-- vert arm:  x=21 to 51, y=21 to 71 -->
+  <rect x="21" y="21" width="30" height="50" fill="#083674"/>
 
-  <!-- Top-right corner bracket -->
-  <!-- horizontal arm: (216,8) to (282,8), height 24 -->
-  <rect x="216" y="8"  width="66" height="24" fill="#0e3e7a"/>
-  <!-- vertical arm: (258,8) to (258,74), width 24 -->
-  <rect x="258" y="8"  width="24" height="66" fill="#0e3e7a"/>
+  <!-- ═══ TOP-RIGHT BRACKET ═══ -->
+  <!-- horiz arm: x=219 to 269, y=21 to 51 -->
+  <rect x="219" y="21" width="50" height="30" fill="#083674"/>
+  <!-- vert arm:  x=239 to 269, y=21 to 71 -->
+  <rect x="239" y="21" width="30" height="50" fill="#083674"/>
 
-  <!-- Bottom-left corner bracket -->
-  <!-- horizontal arm: (8,258) to (74,258), height 24 -->
-  <rect x="8"  y="258" width="66" height="24" fill="#0e3e7a"/>
-  <!-- vertical arm: (8,216) to (8,282), width 24 -->
-  <rect x="8"  y="216" width="24" height="66" fill="#0e3e7a"/>
+  <!-- ═══ BOTTOM-LEFT BRACKET ═══ -->
+  <!-- horiz arm: x=21 to 71, y=239 to 269 -->
+  <rect x="21" y="239" width="50" height="30" fill="#083674"/>
+  <!-- vert arm:  x=21 to 51, y=219 to 269 -->
+  <rect x="21" y="219" width="30" height="50" fill="#083674"/>
 
-  <!-- Bottom-right corner bracket -->
-  <!-- horizontal arm: (216,258) to (282,258), height 24 -->
-  <rect x="216" y="258" width="66" height="24" fill="#0e3e7a"/>
-  <!-- vertical arm: (258,216) to (258,282), width 24 -->
-  <rect x="258" y="216" width="24" height="66" fill="#0e3e7a"/>
+  <!-- ═══ BOTTOM-RIGHT BRACKET ═══ -->
+  <!-- horiz arm: x=219 to 269, y=239 to 269 -->
+  <rect x="219" y="239" width="50" height="30" fill="#083674"/>
+  <!-- vert arm:  x=239 to 269, y=219 to 269 -->
+  <rect x="239" y="219" width="30" height="50" fill="#083674"/>
 
-  <!-- Red squares (cross/plus of 5 squares, 58x58 each, 16px gap) -->
-
+  <!-- ═══ RED SQUARES (49x49) ═══ -->
   <!-- Top-left -->
-  <rect x="42"  y="42"  width="58" height="58" fill="#e8231e"/>
-
+  <rect x="71"  y="71"  width="49" height="49" fill="#e8231e"/>
   <!-- Top-right -->
-  <rect x="190" y="42"  width="58" height="58" fill="#e8231e"/>
-
+  <rect x="170" y="71"  width="49" height="49" fill="#e8231e"/>
   <!-- Centre -->
-  <rect x="116" y="116" width="58" height="58" fill="#e8231e"/>
-
+  <rect x="121" y="121" width="49" height="49" fill="#e8231e"/>
   <!-- Bottom-left -->
-  <rect x="42"  y="190" width="58" height="58" fill="#e8231e"/>
-
+  <rect x="71"  y="170" width="49" height="49" fill="#e8231e"/>
   <!-- Bottom-right -->
-  <rect x="190" y="190" width="58" height="58" fill="#e8231e"/>
+  <rect x="170" y="170" width="49" height="49" fill="#e8231e"/>
 
 </svg>
