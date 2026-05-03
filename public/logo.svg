@@ -1,38 +1,84 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 290 290" width="290" height="290">
 
-  <!-- Bracket color: #0e3e7a (matches reference logo bright navy) -->
-  <!-- Red color: #e8231e (matches reference logo vivid red) -->
-  <!-- Transparent background: no <rect> fill -->
+  <!--
+    Layout:
+    - Canvas: 290x290
+    - Red squares: 58x58 each
+    - Red grid starts at x=58, y=58 (top-left square)
+    - Gap between bracket inner edge and red squares: 10px
+    - So bracket inner corner is at x=48, y=48
+    - Bracket thickness: 26px
+    - Bracket arm length: 68px
+    - Bracket outer corner: x=48-26=22, y=48-26=22
+    - Bracket arm reaches: 22+68=90 (stops before red square edge at 58, giving gap)
+
+    Red grid (5 squares, 58x58, gap 16px between):
+      TL: (58, 58)
+      TR: (174, 58)   [58 + 58 + 58 = 174... let me compute properly]
+
+    Total red span: 3*58 + 2*gap = 174 + 2*16 = 206
+    Start: (290-206)/2 = 42
+    Squares at: 42, 42+58+16=116, 42+116+16=174  -- only 3 cols
+
+    For 5-square cross pattern (not 3x3 grid):
+      Centre:  (116, 116)  size 58
+      TL:      (42,  42)   size 58   -> right edge = 100
+      TR:      (190, 42)   size 58   -> left edge = 190
+      BL:      (42,  190)  size 58
+      BR:      (190, 190)  size 58
+
+    Gap between TL square right edge (100) and centre left edge (116) = 16px ✓
+    Gap = 16px between all adjacent squares ✓
+
+    Bracket inner corner: 10px gap from red square outer corner
+      TL bracket inner corner: (42-10, 42-10) = (32, 32)
+      Bracket thickness: 24px -> outer corner at (32-24, 32-24) = (8, 8)
+      Arm length: 66px -> arm reaches 8+66=74 (stops before red square edge at 42) ✓
+
+    BR bracket inner corner: (248+10, 248+10) = (258, 258)
+      outer corner: (258+24, 258+24) = (282, 282)
+      arm starts at 282-66=216 -> stops before red square left edge at 248 ✓
+  -->
 
   <!-- Top-left corner bracket -->
-  <rect x="21" y="21" width="70" height="28" fill="#0e3e7a"/>
-  <rect x="21" y="21" width="28" height="70" fill="#0e3e7a"/>
+  <!-- horizontal arm: (8,8) to (74,8), height 24 -->
+  <rect x="8"  y="8"  width="66" height="24" fill="#0e3e7a"/>
+  <!-- vertical arm: (8,8) to (8,74), width 24 -->
+  <rect x="8"  y="8"  width="24" height="66" fill="#0e3e7a"/>
 
   <!-- Top-right corner bracket -->
-  <rect x="199" y="21" width="70" height="28" fill="#0e3e7a"/>
-  <rect x="241" y="21" width="28" height="70" fill="#0e3e7a"/>
+  <!-- horizontal arm: (216,8) to (282,8), height 24 -->
+  <rect x="216" y="8"  width="66" height="24" fill="#0e3e7a"/>
+  <!-- vertical arm: (258,8) to (258,74), width 24 -->
+  <rect x="258" y="8"  width="24" height="66" fill="#0e3e7a"/>
 
   <!-- Bottom-left corner bracket -->
-  <rect x="21" y="241" width="70" height="28" fill="#0e3e7a"/>
-  <rect x="21" y="199" width="28" height="70" fill="#0e3e7a"/>
+  <!-- horizontal arm: (8,258) to (74,258), height 24 -->
+  <rect x="8"  y="258" width="66" height="24" fill="#0e3e7a"/>
+  <!-- vertical arm: (8,216) to (8,282), width 24 -->
+  <rect x="8"  y="216" width="24" height="66" fill="#0e3e7a"/>
 
   <!-- Bottom-right corner bracket -->
-  <rect x="199" y="241" width="70" height="28" fill="#0e3e7a"/>
-  <rect x="241" y="199" width="28" height="70" fill="#0e3e7a"/>
+  <!-- horizontal arm: (216,258) to (282,258), height 24 -->
+  <rect x="216" y="258" width="66" height="24" fill="#0e3e7a"/>
+  <!-- vertical arm: (258,216) to (258,282), width 24 -->
+  <rect x="258" y="216" width="24" height="66" fill="#0e3e7a"/>
 
-  <!-- Centre red square -->
-  <rect x="113" y="113" width="64" height="64" fill="#e8231e"/>
+  <!-- Red squares (cross/plus of 5 squares, 58x58 each, 16px gap) -->
 
-  <!-- Top-left red square -->
-  <rect x="49" y="49" width="64" height="64" fill="#e8231e"/>
+  <!-- Top-left -->
+  <rect x="42"  y="42"  width="58" height="58" fill="#e8231e"/>
 
-  <!-- Top-right red square -->
-  <rect x="177" y="49" width="64" height="64" fill="#e8231e"/>
+  <!-- Top-right -->
+  <rect x="190" y="42"  width="58" height="58" fill="#e8231e"/>
 
-  <!-- Bottom-left red square -->
-  <rect x="49" y="177" width="64" height="64" fill="#e8231e"/>
+  <!-- Centre -->
+  <rect x="116" y="116" width="58" height="58" fill="#e8231e"/>
 
-  <!-- Bottom-right red square -->
-  <rect x="177" y="177" width="64" height="64" fill="#e8231e"/>
+  <!-- Bottom-left -->
+  <rect x="42"  y="190" width="58" height="58" fill="#e8231e"/>
+
+  <!-- Bottom-right -->
+  <rect x="190" y="190" width="58" height="58" fill="#e8231e"/>
 
 </svg>
