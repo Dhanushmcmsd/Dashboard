@@ -10,8 +10,9 @@ export default async function CompanyLayout({
   params,
 }: {
   children: React.ReactNode;
-  params: { companySlug: string };
+  params: Promise<{ companySlug: string }>;
 }) {
+  const { companySlug } = await params;
   const session = await getServerSession(authOptions);
 
   if (!session?.user) redirect("/login");
@@ -19,13 +20,13 @@ export default async function CompanyLayout({
   const user = session.user as SessionUser;
 
   // super_admin may visit any company slug; others must own it
-  if (user.role !== "super_admin" && user.companySlug !== params.companySlug) {
+  if (user.role !== "super_admin" && user.companySlug !== companySlug) {
     redirect("/login");
   }
 
   // Fetch active portfolios for the company (drives nav links)
   const company = await prisma.company.findUnique({
-    where: { slug: params.companySlug },
+    where: { slug: companySlug },
     select: {
       id: true,
       name: true,
@@ -42,7 +43,7 @@ export default async function CompanyLayout({
   return (
     <div className="min-h-screen flex flex-col md:flex-row bg-[#f7fff0]">
       <DashboardNav
-        companySlug={params.companySlug}
+        companySlug={companySlug}
         companyName={company.name}
         portfolios={company.portfolios}
         userRole={user.role}
