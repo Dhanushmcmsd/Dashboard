@@ -12,7 +12,9 @@
     "db:push": "dotenv -e .env.local -- npx prisma db push",
     "db:seed": "dotenv -e .env.local -- npx prisma db seed",
     "db:studio": "dotenv -e .env.local -- npx prisma studio",
-    "db:migrate": "dotenv -e .env.local -- npx prisma migrate dev"
+    "db:migrate": "dotenv -e .env.local -- npx prisma migrate dev",
+    "seed": "dotenv -e .env.local -- npx prisma db seed",
+    "seed:reset": "dotenv -e .env.local -- tsx prisma/reset.ts && dotenv -e .env.local -- npx prisma db seed"
   },
   "repository": {
     "type": "git",
