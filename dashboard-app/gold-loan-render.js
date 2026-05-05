@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════
-   GOLD LOAN RENDER — Part 3 of 8
+   GOLD LOAN RENDER — Part 3 of 8 (extended in Part 6)
    KPI + Period + Layout Render Functions
    Globals: D, period, GOLDRATE, HIGH_RISK_ACCOUNTS, BRANCHES
 ═══════════════════════════════════════════════════════ */
@@ -176,7 +176,7 @@ function renderTgtBars() {
     const tgtPct = Math.round(b.tgt / max * 100);
     const achPct = Math.round(b.act / b.tgt * 100);
     const color  = achPct >= 95 ? '#1D9E75' : achPct >= 80 ? '#EF9F27' : '#D85A30';
-    const unit   = period === 'YTD' ? ' Cr' : ' Cr';
+    const unit   = ' Cr';
 
     return `<div class="tgt-row">
       <div class="tgt-name">${b.n}</div>
@@ -219,4 +219,72 @@ function renderLTV() {
       </div>
     </div>`;
   }).join('');
+}
+
+/* ─────────────────────────────────────────────────────
+   7. BRANCH TABLE  (Part 6)
+───────────────────────────────────────────────────── */
+function renderBranchTable() {
+  const el = document.getElementById('branchTbl');
+  if (!el) return;
+
+  const rows = BRANCHES.map(b => {
+    const loans    = Math.round(b.aum * 100 / 5.24);
+    const avgGw    = Math.round(b.gw / loans * 10) / 10;
+    const collColor = b.coll < 98 ? '#D85A30' : b.coll < 99 ? '#EF9F27' : '#1D9E75';
+    const npaColor  = b.npa > 2.5 ? '#D85A30' : b.npa > 2   ? '#BA7517' : '#1D9E75';
+
+    return `<tr>
+      <td>${b.n}</td>
+      <td style="text-align:right;">${b.aum}</td>
+      <td style="text-align:right;">${b.disb}</td>
+      <td style="text-align:right;color:${collColor};font-weight:500;">${b.coll}%</td>
+      <td style="text-align:right;color:${npaColor};font-weight:500;">${b.npa}%</td>
+      <td style="text-align:right;">${b.gw.toLocaleString()}</td>
+      <td style="text-align:right;">${avgGw}g</td>
+    </tr>`;
+  }).join('');
+
+  el.innerHTML = `<table class="btable">
+    <thead>
+      <tr>
+        <th>Branch</th>
+        <th style="text-align:right;">AUM (₹Cr)</th>
+        <th style="text-align:right;">Disbursement (₹Cr)</th>
+        <th style="text-align:right;">Coll. Eff. %</th>
+        <th style="text-align:right;">NPA %</th>
+        <th style="text-align:right;">Gold Wt (g)</th>
+        <th style="text-align:right;">Avg Gold Wt/Loan</th>
+      </tr>
+    </thead>
+    <tbody>${rows}</tbody>
+  </table>`;
+}
+
+/* ─────────────────────────────────────────────────────
+   8. ALERTS  (Part 6)
+───────────────────────────────────────────────────── */
+function renderAlerts() {
+  const el = document.getElementById('alerts');
+  if (!el) return;
+
+  const critical = HIGH_RISK_ACCOUNTS.filter(r => r.status === 'critical').length;
+
+  const alerts = [
+    {t:'d', m:'Kottayam NPA at 3.1% exceeds 3% threshold. Immediate review required.'},
+    {t:'w', m:'4 high-value disbursements >₹10L pending second-level approval.'},
+    {t:'w', m:'14 loans above 75% LTV following gold price movement. Revaluation due.'},
+    {t:'d', m:'3 accounts gold valuation mismatch flagged — audit initiated.'},
+    {t:'i', m:'MTD disbursement at 89% of target. ' + (period === 'MTD' ? 'Month end — 3 business days action needed.' : 'Review disbursement pace.')},
+    {t:'w', m:'Trivandrum & Kottayam collection efficiency below 98%. Escalation triggered.'},
+    {t:'i', m:'Overdue collection ₹1.86 Cr MTD — 148 accounts, 14% in 90+ bucket.'},
+    {t:'d', m: critical + ' accounts loan outstanding exceeds current gold collateral value. Immediate notice required.'}
+  ];
+
+  el.innerHTML = alerts.map((a, i) =>
+    `<div class="al ${a.t}" style="animation-delay:${i * 60}ms">
+      <div class="dot"></div>
+      <span>${a.m}</span>
+    </div>`
+  ).join('');
 }
