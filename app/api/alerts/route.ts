@@ -35,7 +35,7 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   try {
-    const auth = await requireAuth(["MANAGEMENT"]);
+    const auth = await requireAuth(["company_admin"]);
     if (auth.error) return errorResponse(auth.error, auth.status);
 
     const user = auth.user!;
