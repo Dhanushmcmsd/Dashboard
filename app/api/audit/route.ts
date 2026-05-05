@@ -4,7 +4,8 @@ import { prisma } from "@/lib/prisma";
 
 export async function GET(req: Request) {
   try {
-    // SUPER_ADMIN removed — it does not exist in the Prisma Role enum
+    // SUPER_ADMIN and ADMIN can both access audit logs.
+    // requireAuth() always admits SUPER_ADMIN implicitly.
     const auth = await requireAuth(["ADMIN"]);
     if (auth.error || !auth.user) {
       return errorResponse(auth.error || "Unauthorized", auth.status || 401);

@@ -6,6 +6,9 @@ export type BranchName = (typeof BRANCHES)[number];
 export const DPD_BUCKETS = ["0", "1-30", "31-60", "61-90", "91-180", "181+"] as const;
 export type DpdBucket = (typeof DPD_BUCKETS)[number];
 
+/** Must match Prisma Role enum exactly */
+export type AppRole = "SUPER_ADMIN" | "ADMIN" | "MANAGEMENT" | "EMPLOYEE";
+
 export interface DpdBucketData {
   bucket: DpdBucket;
   count: number;
@@ -21,24 +24,24 @@ export interface ParsedRow {
   npa: number;                // GNPA amount (DPD > 90)
   dpdBuckets: Record<DpdBucket, { count: number; amount: number }>;
 
-  // Extended Gold Loan / Loan metrics (optional — populated when source is Loan Balance Statement)
+  // Extended Gold Loan / Loan metrics (optional)
   totalAccounts?: number;
   totalCustomers?: number;
-  avgYield?: number;           // Average interest rate %
+  avgYield?: number;
   ftdDisbursement?: number;
   mtdDisbursement?: number;
   ytdDisbursement?: number;
-  goldPledgedGrams?: number;   // Gold Loan only
+  goldPledgedGrams?: number;
   gnpaAmount?: number;
-  gnpaPct?: number;            // GNPA % = gnpaAmount / closingBalance
-  overdueAmount?: number;      // DPD > 0 closing balance sum
-  overduePct?: number;         // overdueAmount / closingBalance
-  avgTicketSize?: number;      // closingBalance / totalAccounts
-  avgGoldPerLoan?: number;     // goldPledgedGrams / totalAccounts
+  gnpaPct?: number;
+  overdueAmount?: number;
+  overduePct?: number;
+  avgTicketSize?: number;
+  avgGoldPerLoan?: number;
   principalCollection?: number;
   interestCollection?: number;
-  collectionEfficiency?: number; // from transaction statement
-  reportDateRange?: string;    // e.g. "01-04-2026 to 08-04-2026"
+  collectionEfficiency?: number;
+  reportDateRange?: string;
   fileType?: "LOAN_BALANCE" | "TRANSACTION" | "SUMMARY";
 }
 
@@ -91,7 +94,7 @@ export interface UserRecord {
   id: string;
   name: string;
   email: string;
-  role: "ADMIN" | "EMPLOYEE" | "MANAGEMENT";
+  role: AppRole;
   branches: string[];
   isActive: boolean;
   passwordSet: boolean;
@@ -104,12 +107,22 @@ export interface ApiResponse<T = undefined> {
   error?: string;
 }
 
+/**
+ * Shape of session.user after NextAuth JWT/Session callbacks.
+ * organizationId is null only for SUPER_ADMIN.
+ */
 export interface SessionUser {
   id: string;
   name: string;
   email: string;
-  role: "ADMIN" | "EMPLOYEE" | "MANAGEMENT";
+  role: AppRole;
   branches: string[];
+  /**
+   * The organization this user belongs to.
+   * null for SUPER_ADMIN (they span all orgs).
+   * Must be present for all other roles.
+   */
+  organizationId: string | null;
 }
 
 export interface UploadRecord {
