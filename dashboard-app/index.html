@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gold Loan NBFC — Management Dashboard</title>
+  <link rel="stylesheet" href="design-tokens.css">
+</head>
+<body>
+  <div class="dash">
+
+    <!-- Header -->
+    <div style="margin-bottom: 10px;">
+      <div style="font-size: 18px; font-weight: 500; color: var(--color-text-primary);">
+        Gold Loan NBFC — Management Dashboard
+      </div>
+      <div style="font-size: 11px; color: var(--color-text-secondary); margin-top: 4px;">
+        As on 05 May 2026 | All figures in ₹ Crore unless noted
+      </div>
+    </div>
+
+    <!-- Company Nav -->
+    <div class="company-nav">
+      <button class="pbtn active" onclick="selectCompany('Supra', this)">Supra</button>
+      <button class="pbtn" onclick="selectCompany('Ideal Supermarket', this)">Ideal Supermarket</button>
+      <button class="pbtn" onclick="selectCompany('CFCICI', this)">CFCICI</button>
+      <button class="pbtn" onclick="selectCompany('Centreal Bazar', this)">Centreal Bazar</button>
+      <button class="pbtn" onclick="selectCompany('Centora', this)">Centora</button>
+      <button class="pbtn" onclick="selectCompany('Centreal Bio Fuel', this)">Centreal Bio Fuel</button>
+    </div>
+
+    <!-- Product Nav -->
+    <div class="product-nav" id="productNav">
+      <button class="pbtn active" onclick="selectProduct('Gold Loan', this)">Gold Loan</button>
+      <button class="pbtn" onclick="selectProduct('Pledge Loan', this)">Pledge Loan</button>
+      <button class="pbtn" onclick="selectProduct('ML Loan', this)">ML Loan</button>
+      <button class="pbtn" onclick="selectProduct('Personal Loan', this)">Personal Loan</button>
+      <button class="pbtn" onclick="selectProduct('Vehicle Loan', this)">Vehicle Loan</button>
+    </div>
+
+    <!-- Dashboard Content -->
+    <div id="dashboard-content"></div>
+
+  </div>
+
+  <script>
+    function selectCompany(name, btn) {
+      document.querySelectorAll('.company-nav .pbtn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const pn = document.getElementById('productNav');
+      if (name === 'Supra') {
+        pn.classList.remove('hidden');
+        showGoldLoanDashboard();
+      } else {
+        pn.classList.add('hidden');
+        document.getElementById('dashboard-content').innerHTML =
+          '<div class="placeholder-card"><strong>' + name + ' Dashboard</strong>' +
+          'Under Configuration. Branches and data pipelines will be mapped here.</div>';
+      }
+    }
+
+    function selectProduct(name, btn) {
+      document.querySelectorAll('.product-nav .pbtn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      if (name === 'Gold Loan') {
+        showGoldLoanDashboard();
+      } else {
+        document.getElementById('dashboard-content').innerHTML =
+          '<div class="placeholder-card"><strong>' + name + ' Dashboard</strong>' +
+          'Coming Soon. Data integration in progress.</div>';
+      }
+    }
+
+    function showGoldLoanDashboard() {
+      document.getElementById('dashboard-content').innerHTML =
+        '<p style="color:var(--color-text-secondary);padding:2rem">' +
+        'Gold Loan dashboard will load here in Part 3+</p>';
+    }
+
+    // Default load
+    showGoldLoanDashboard();
+  </script>
+</body>
+</html>
