@@ -64,6 +64,7 @@ enum TxnType {
   CLOSURE
   PART_PAYMENT
   INTEREST_ACCRUAL
+  PENALTY
 }
 
 /// Aggregation window for a KPI snapshot

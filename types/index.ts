@@ -129,7 +129,7 @@ export interface SessionUser {
 export interface UploadRecord {
   id: string;
   branch: string;
-  fileType: "EXCEL" | "HTML";
+  fileType: "EXCEL" | "HTML" | "CSV";
   fileName: string;
   uploadedAt: string;
   dateKey: string;

@@ -8,6 +8,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "test:parsers": "tsx --test __tests__/spreadsheet-parsers.test.ts",
     "db:generate": "dotenv -e .env.local -- npx prisma generate",
     "db:push": "dotenv -e .env.local -- npx prisma db push",
     "db:seed": "dotenv -e .env.local -- npx prisma db seed",
@@ -65,6 +66,7 @@
     "swr": "^2.3.3",
     "tailwind-merge": "^3.5.0",
     "typescript": "^6.0.3",
+    "xlsx": "^0.18.5",
     "zod": "^4.3.6"
   },
   "devDependencies": {
