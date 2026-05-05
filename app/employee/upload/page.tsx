@@ -1,461 +1,263 @@
 "use client";
 
-import { useState, useRef } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import { BRANCHES } from "@/types";
+import { useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { QUERY_KEYS, apiFetch } from "@/lib/query-client";
-import { UploadRecord } from "@/types";
-import { toast } from "sonner";
-import {
-  UploadCloud,
-  X,
-  Loader2,
-  ArrowLeft,
-  Clock,
-  CheckCircle2,
-  AlertCircle,
-  RefreshCcw,
-  AlertTriangle,
-} from "lucide-react";
-import Link from "next/link";
-import { format } from "date-fns";
-import { formatINRCompact, getTodayKey } from "@/lib/utils";
+import { apiFetch } from "@/lib/query-client";
+import { Loader2, UploadCloud, FileText, CalendarDays } from "lucide-react";
 
-type UploadState =
-  | "idle"
-  | "file-selected"
-  | "previewing"
-  | "preview-ready"
-  | "preview-error"
-  | "uploading"
-  | "done";
-
-interface PreviewData {
-  closingBalance: number;
-  disbursement: number;
-  collection: number;
-  npa: number;
-  totalAccounts: number | null;
-  reportDateRange: string | null;
-  fileType: string;
+type UploadHistoryRow = {
+  id: string;
   fileName: string;
-  branch: string;
+  fileType: "EXCEL" | "CSV" | "HTML";
+  asOnDate: string;
+  status: "PENDING" | "PROCESSING" | "SUCCESS" | "FAILED" | "PARTIAL_SUCCESS";
+  rowCount: number | null;
+  skippedRowCount: number | null;
+  createdAt: string;
+};
+
+type StatementType = "LOAN_BALANCE" | "TRANSACTION";
+
+function statusBadgeClass(status: UploadHistoryRow["status"]): string {
+  if (status === "SUCCESS") return "bg-green-100 text-green-800 border-green-200";
+  if (status === "FAILED") return "bg-red-100 text-red-700 border-red-200";
+  if (status === "PARTIAL_SUCCESS") return "bg-amber-100 text-amber-800 border-amber-200";
+  return "bg-blue-100 text-blue-700 border-blue-200";
 }
 
-interface DuplicateRecord {
-  uploadedAt: string;
-  fileName: string;
+function todayIso(): string {
+  return new Date().toISOString().slice(0, 10);
 }
 
-export default function UploadPage() {
-  const searchParams = useSearchParams();
-  const branchRaw = searchParams.get("branch");
-  const branch = BRANCHES.find((b) => b === branchRaw);
-
-  const qc = useQueryClient();
-  const [fileType, setFileType] = useState<"EXCEL" | "HTML">("EXCEL");
+export default function EmployeeUploadPage() {
+  const queryClient = useQueryClient();
+  const [statementType, setStatementType] = useState<StatementType>("LOAN_BALANCE");
+  const [asOnDate, setAsOnDate] = useState(todayIso());
   const [file, setFile] = useState<File | null>(null);
-  const [isDragging, setIsDragging] = useState(false);
-  const [uploadState, setUploadState] = useState<UploadState>("idle");
-  const [preview, setPreview] = useState<PreviewData | null>(null);
-  const [previewError, setPreviewError] = useState<string | null>(null);
-  const [duplicateRecord, setDuplicateRecord] = useState<DuplicateRecord | null>(null);
-  const pendingFileRef = useRef<File | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [dragging, setDragging] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const { data: history, isLoading: historyLoading } = useQuery({
-    queryKey: [...QUERY_KEYS.UPLOAD_HISTORY, branch],
-    queryFn: () =>
-      apiFetch<UploadRecord[]>(
-        `/api/upload/history?branch=${encodeURIComponent(branch || "")}`
-      ),
-    enabled: !!branch,
+  const historyQuery = useQuery({
+    queryKey: ["company-upload-history"],
+    queryFn: () => apiFetch<UploadHistoryRow[]>("/api/company-upload/history"),
+    refetchInterval: (query) => {
+      const rows = (query.state.data ?? []) as UploadHistoryRow[];
+      const hasActive = rows.some(
+        (row) => row.status === "PENDING" || row.status === "PROCESSING"
+      );
+      return hasActive ? 5000 : false;
+    },
   });
 
-  if (!branch) {
-    return (
-      <div className="text-center py-12">
-        <h2 className="text-xl text-[#991b1b]">Invalid Branch Selection</h2>
-        <Link href="/employee" className="text-[#064734] hover:underline mt-4 inline-block font-medium">
-          Return to branch selection
-        </Link>
-      </div>
-    );
-  }
+  const accept = ".xlsx,.xls,.csv";
+  const hasActiveUploads = useMemo(
+    () =>
+      (historyQuery.data ?? []).some(
+        (row) => row.status === "PENDING" || row.status === "PROCESSING"
+      ),
+    [historyQuery.data]
+  );
 
-  const handleDragOver  = (e: React.DragEvent) => { e.preventDefault(); setIsDragging(true); };
-  const handleDragLeave = (e: React.DragEvent) => { e.preventDefault(); setIsDragging(false); };
-
-  const fetchPreview = async (selectedFile: File) => {
-    setUploadState("previewing");
-    setPreview(null);
-    setPreviewError(null);
-    const fd = new FormData();
-    fd.append("file", selectedFile);
-    fd.append("branch", branch);
-    try {
-      const res  = await fetch("/api/upload/preview", { method: "POST", body: fd });
-      const json = await res.json();
-      if (!json.success) {
-        setPreviewError(json.error || "Failed to parse file.");
-        setUploadState("preview-error");
-      } else {
-        setPreview(json.data);
-        setUploadState("preview-ready");
-      }
-    } catch {
-      setPreviewError("Network error. Could not reach the server.");
-      setUploadState("preview-error");
-    }
-  };
-
-  const acceptFile = (selectedFile: File) => {
-    const todayKey  = getTodayKey();
-    const duplicate = history?.find((r) => r.dateKey === todayKey);
-    if (duplicate) {
-      pendingFileRef.current = selectedFile;
-      setDuplicateRecord({ uploadedAt: duplicate.uploadedAt, fileName: duplicate.fileName });
+  const onFileSelect = (selected: File | null) => {
+    if (!selected) return;
+    const lower = selected.name.toLowerCase();
+    const valid = lower.endsWith(".xlsx") || lower.endsWith(".xls") || lower.endsWith(".csv");
+    if (!valid) {
+      setError("Only .xlsx, .xls, and .csv files are allowed.");
       return;
     }
-    setFile(selectedFile);
-    setUploadState("file-selected");
-    fetchPreview(selectedFile);
+    setError(null);
+    setFile(selected);
   };
 
-  const validateAndSetFile = (selectedFile: File) => {
-    if (selectedFile.size > 5 * 1024 * 1024) { toast.error("File size exceeds 5MB limit", { position: "bottom-right" }); return; }
-    const name = selectedFile.name.toLowerCase();
-    if (fileType === "EXCEL" && !name.endsWith(".xlsx") && !name.endsWith(".xls")) {
-      toast.error("Please upload an Excel file (.xlsx)", { position: "bottom-right" }); return;
+  const onDrop = (event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    setDragging(false);
+    onFileSelect(event.dataTransfer.files?.[0] ?? null);
+  };
+
+  const onSubmit = async () => {
+    if (!file) {
+      setError("Please choose a file.");
+      return;
     }
-    if (fileType === "HTML" && !name.endsWith(".html") && !name.endsWith(".htm")) {
-      toast.error("Please upload an HTML file (.html)", { position: "bottom-right" }); return;
+    if (!asOnDate) {
+      setError("Please choose an as-on date.");
+      return;
     }
-    acceptFile(selectedFile);
-  };
 
-  const handleReplaceConfirm = () => {
-    const pending = pendingFileRef.current;
-    setDuplicateRecord(null);
-    pendingFileRef.current = null;
-    if (!pending) return;
-    setFile(pending);
-    setUploadState("file-selected");
-    fetchPreview(pending);
-  };
+    const picked = new Date(asOnDate);
+    const now = new Date();
+    if (picked.getTime() > now.getTime()) {
+      setError("As-on date cannot be in the future.");
+      return;
+    }
 
-  const handleReplaceCancel = () => {
-    setDuplicateRecord(null);
-    pendingFileRef.current = null;
-    if (fileInputRef.current) fileInputRef.current.value = "";
-  };
+    setSubmitting(true);
+    setError(null);
 
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(false);
-    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) validateAndSetFile(e.dataTransfer.files[0]);
-  };
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files.length > 0) validateAndSetFile(e.target.files[0]);
-  };
-
-  const resetFile = () => {
-    setFile(null); setPreview(null); setPreviewError(null); setUploadState("idle");
-    if (fileInputRef.current) fileInputRef.current.value = "";
-  };
-
-  const handleUpload = async () => {
-    if (!file) return;
-    setUploadState("uploading");
-    const formData = new FormData();
-    formData.append("file", file);
-    formData.append("branch", branch);
     try {
-      const res  = await fetch("/api/upload", { method: "POST", body: formData });
-      const data = await res.json();
-      if (!data.success) {
-        toast.error(data.error || "Upload failed", { position: "bottom-right" });
-        setUploadState("preview-ready");
-      } else {
-        toast.success("File uploaded and parsed successfully", { position: "bottom-right" });
-        setUploadState("done");
-        setFile(null);
-        setPreview(null);
-        if (fileInputRef.current) fileInputRef.current.value = "";
-        qc.invalidateQueries({ queryKey: [...QUERY_KEYS.UPLOAD_HISTORY, branch] });
-        setTimeout(() => setUploadState("idle"), 2000);
+      const formData = new FormData();
+      formData.set("file", file);
+      formData.set("as_on_date", asOnDate);
+      formData.set("statement_type", statementType);
+
+      const res = await fetch("/api/company-upload", {
+        method: "POST",
+        body: formData,
+      });
+      const body = await res.json();
+      if (!body.success) {
+        throw new Error(body.error ?? "Upload failed.");
       }
-    } catch {
-      toast.error("An unexpected error occurred during upload", { position: "bottom-right" });
-      setUploadState("preview-ready");
+
+      setFile(null);
+      await queryClient.invalidateQueries({ queryKey: ["company-upload-history"] });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Upload failed.";
+      setError(message);
+    } finally {
+      setSubmitting(false);
     }
   };
-
-  const isUploading = uploadState === "uploading";
-  const showDropzone = uploadState === "idle" || uploadState === "file-selected";
 
   return (
-    <>
-      {/* ── Duplicate upload warning modal ── */}
-      {duplicateRecord && (
-        <div className="fixed inset-0 bg-[#064734]/20 backdrop-blur-sm z-50 flex items-center justify-center">
-          <div className="bg-white border border-[#f0c27f] rounded-2xl p-6 max-w-md w-full mx-4 shadow-[0_12px_40px_rgba(6,71,52,0.15)]">
-            <div className="flex items-start gap-3 mb-4">
-              <div className="shrink-0 w-10 h-10 rounded-full bg-amber-50 border border-amber-200 flex items-center justify-center">
-                <AlertTriangle className="w-5 h-5 text-amber-600" />
-              </div>
-              <div>
-                <h3 className="text-[#064734] font-semibold text-base">Already Uploaded Today</h3>
-                <p className="text-[#4a7c5f] text-sm mt-1">
-                  You uploaded{" "}
-                  <span className="text-[#064734] font-medium">{duplicateRecord.fileName}</span>{" "}
-                  at{" "}
-                  <span className="text-[#064734] font-medium">
-                    {format(new Date(duplicateRecord.uploadedAt), "h:mm a")}
-                  </span>
-                  . Uploading again will{" "}
-                  <span className="text-amber-600 font-medium">replace today's data</span> for this branch.
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center gap-3 mt-5">
-              <button onClick={handleReplaceConfirm} className="flex-1 px-4 py-2.5 bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-300 rounded-xl text-sm font-semibold transition-colors">
-                Replace Anyway
-              </button>
-              <button onClick={handleReplaceCancel} className="flex-1 px-4 py-2.5 bg-white hover:bg-[#f7fff0] border border-[#c8e6c0] text-[#064734] rounded-xl text-sm font-semibold transition-colors">
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+    <div className="space-y-6">
+      <div className="rounded-2xl border border-[#c8e6c0] bg-white p-6">
+        <h1 className="text-2xl font-bold text-[#064734]">Upload Data</h1>
+        <p className="mt-1 text-sm text-[#4a7c5f]">
+          Upload Loan Balance or Transaction spreadsheets for processing.
+        </p>
 
-      {/* ── Main page ── */}
-      <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-        <div>
-          <Link href="/employee" className="inline-flex items-center text-sm text-[#4a7c5f] hover:text-[#064734] transition-colors mb-4 font-medium">
-            <ArrowLeft className="w-4 h-4 mr-1" />
-            Back to Branches
-          </Link>
-          <h2 className="text-2xl font-bold text-[#064734]">Upload Data for {branch}</h2>
+        <div className="mt-5 grid gap-4 md:grid-cols-2">
+          <label className="space-y-1">
+            <span className="text-xs font-semibold uppercase tracking-wide text-[#4a7c5f]">
+              Statement Type
+            </span>
+            <select
+              value={statementType}
+              onChange={(event) => setStatementType(event.target.value as StatementType)}
+              className="w-full rounded-xl border border-[#c8e6c0] bg-white px-3 py-2 text-sm text-[#064734]"
+            >
+              <option value="LOAN_BALANCE">Loan Balance</option>
+              <option value="TRANSACTION">Transaction</option>
+            </select>
+          </label>
+
+          <label className="space-y-1">
+            <span className="text-xs font-semibold uppercase tracking-wide text-[#4a7c5f]">
+              As-On Date
+            </span>
+            <div className="relative">
+              <CalendarDays className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-[#4a7c5f]" />
+              <input
+                type="date"
+                value={asOnDate}
+                max={todayIso()}
+                onChange={(event) => setAsOnDate(event.target.value)}
+                className="w-full rounded-xl border border-[#c8e6c0] bg-white py-2 pl-9 pr-3 text-sm text-[#064734]"
+              />
+            </div>
+          </label>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Upload card */}
-          <div className="lg:col-span-2 space-y-6">
-            <div className="bg-white border border-[#c8e6c0] rounded-2xl p-6 shadow-[0_4px_24px_rgba(6,71,52,0.06)]">
-              {/* File type toggle */}
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-lg font-semibold text-[#064734]">Data File</h3>
-                <div className="flex bg-[#f7fff0] border border-[#c8e6c0] p-1 rounded-xl">
-                  <button
-                    onClick={() => { setFileType("EXCEL"); resetFile(); }}
-                    className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-colors duration-150 ${
-                      fileType === "EXCEL"
-                        ? "bg-[#064734] text-white shadow-sm"
-                        : "text-[#4a7c5f] hover:text-[#064734]"
-                    }`}
-                  >
-                    Excel
-                  </button>
-                  <button
-                    onClick={() => { setFileType("HTML"); resetFile(); }}
-                    className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-colors duration-150 ${
-                      fileType === "HTML"
-                        ? "bg-[#064734] text-white shadow-sm"
-                        : "text-[#4a7c5f] hover:text-[#064734]"
-                    }`}
-                  >
-                    HTML
-                  </button>
-                </div>
-              </div>
-
-              {/* Dropzone */}
-              {showDropzone && (
-                <div
-                  className={`border-2 border-dashed rounded-2xl p-12 text-center transition-colors duration-150 cursor-pointer ${
-                    isDragging
-                      ? "border-[#064734] bg-[#E0FFC2]/30"
-                      : "border-[#c8e6c0] hover:border-[#064734]/40 hover:bg-[#f7fff0]"
-                  }`}
-                  onDragOver={handleDragOver}
-                  onDragLeave={handleDragLeave}
-                  onDrop={handleDrop}
-                  onClick={() => fileInputRef.current?.click()}
-                >
-                  <input
-                    type="file"
-                    ref={fileInputRef}
-                    className="hidden"
-                    accept={fileType === "EXCEL" ? ".xlsx,.xls" : ".html,.htm"}
-                    onChange={handleFileChange}
-                  />
-                  <UploadCloud className="w-12 h-12 text-[#4a7c5f] mx-auto mb-4" />
-                  <p className="text-[#064734] font-semibold mb-1">Click or drag file to upload</p>
-                  <p className="text-sm text-[#4a7c5f]">
-                    Single {fileType === "EXCEL" ? "Excel" : "HTML"} file — max 5 MB
-                  </p>
-                </div>
-              )}
-
-              {/* Skeleton while previewing */}
-              {uploadState === "previewing" && (
-                <div className="border border-[#c8e6c0] rounded-2xl p-5 space-y-4">
-                  <div className="h-4 bg-[#f0fce8] rounded w-2/5 animate-pulse" />
-                  <div className="grid grid-cols-2 gap-3">
-                    {[...Array(4)].map((_, i) => (
-                      <div key={i} className="h-16 bg-[#f0fce8] rounded-xl animate-pulse" />
-                    ))}
-                  </div>
-                  <div className="h-4 bg-[#f0fce8] rounded w-1/3 animate-pulse" />
-                  <div className="flex gap-3">
-                    <div className="h-10 bg-[#f0fce8] rounded-xl flex-1 animate-pulse" />
-                    <div className="h-10 bg-[#f0fce8] rounded-xl flex-1 animate-pulse" />
-                  </div>
-                </div>
-              )}
-
-              {/* Preview error */}
-              {uploadState === "preview-error" && previewError && (
-                <div className="border border-[#fca5a5] bg-red-50 rounded-2xl p-5">
-                  <div className="flex items-start gap-3 mb-4">
-                    <AlertCircle className="w-5 h-5 text-[#991b1b] shrink-0 mt-0.5" />
-                    <div>
-                      <p className="text-sm font-semibold text-[#991b1b] mb-1">Could not parse file</p>
-                      <p className="text-sm text-[#991b1b]/80">{previewError}</p>
-                    </div>
-                  </div>
-                  <button
-                    onClick={resetFile}
-                    className="inline-flex items-center gap-2 px-4 py-2 bg-white hover:bg-[#f7fff0] border border-[#c8e6c0] rounded-xl text-sm font-semibold text-[#064734] transition-colors"
-                  >
-                    <RefreshCcw className="w-4 h-4" /> Choose Different File
-                  </button>
-                </div>
-              )}
-
-              {/* Preview ready */}
-              {(uploadState === "preview-ready" || uploadState === "uploading") && preview && (
-                <div className="border border-[#c8e6c0] bg-[#f7fff0] rounded-2xl p-5 space-y-4">
-                  <div className="flex items-center gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-[#22c55e]" />
-                    <p className="text-sm font-semibold text-[#064734]">Parsed Preview — looks correct?</p>
-                    {file && (
-                      <span className="ml-auto text-xs text-[#4a7c5f] bg-white px-2 py-0.5 rounded-lg border border-[#c8e6c0]">
-                        {file.name}
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Metric grid */}
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="bg-white border border-[#c8e6c0] rounded-xl p-3">
-                      <p className="text-xs text-[#4a7c5f] mb-1 uppercase tracking-widest font-medium">Closing Balance</p>
-                      <p className="text-base font-bold text-[#064734] tabular-nums">{formatINRCompact(preview.closingBalance)}</p>
-                    </div>
-                    <div className="bg-white border border-[#c8e6c0] rounded-xl p-3">
-                      <p className="text-xs text-[#4a7c5f] mb-1 uppercase tracking-widest font-medium">Collection</p>
-                      <p className="text-base font-bold text-[#064734] tabular-nums">{formatINRCompact(preview.collection)}</p>
-                    </div>
-                    <div className="bg-white border border-[#c8e6c0] rounded-xl p-3">
-                      <p className="text-xs text-[#4a7c5f] mb-1 uppercase tracking-widest font-medium">Disbursement</p>
-                      <p className="text-base font-bold text-[#064734] tabular-nums">{formatINRCompact(preview.disbursement)}</p>
-                    </div>
-                    <div className="bg-white border border-[#c8e6c0] rounded-xl p-3">
-                      <p className="text-xs text-[#4a7c5f] mb-1 uppercase tracking-widest font-medium">NPA</p>
-                      <p className="text-base font-bold text-[#991b1b] tabular-nums">{formatINRCompact(preview.npa)}</p>
-                    </div>
-                  </div>
-
-                  {(preview.totalAccounts || preview.reportDateRange) && (
-                    <div className="flex flex-wrap gap-3">
-                      {preview.totalAccounts && (
-                        <span className="text-xs bg-white border border-[#c8e6c0] rounded-lg px-2.5 py-1 text-[#4a7c5f] font-medium">
-                          {preview.totalAccounts} Accounts
-                        </span>
-                      )}
-                      {preview.reportDateRange && (
-                        <span className="text-xs bg-white border border-[#c8e6c0] rounded-lg px-2.5 py-1 text-[#4a7c5f] font-medium">
-                          {preview.reportDateRange}
-                        </span>
-                      )}
-                    </div>
-                  )}
-
-                  <div className="flex items-center gap-3 pt-1">
-                    <button
-                      onClick={handleUpload}
-                      disabled={isUploading}
-                      className="flex-1 px-4 py-2.5 bg-[#064734] hover:bg-[#053d2a] disabled:opacity-70 text-white rounded-xl text-sm font-semibold transition-colors flex justify-center items-center gap-2"
-                    >
-                      {isUploading ? (
-                        <><Loader2 className="w-4 h-4 animate-spin" />Uploading…</>
-                      ) : (
-                        "Upload Now"
-                      )}
-                    </button>
-                    <button
-                      onClick={resetFile}
-                      disabled={isUploading}
-                      className="flex-1 px-4 py-2.5 bg-white hover:bg-[#f7fff0] border border-[#c8e6c0] text-[#064734] rounded-xl text-sm font-semibold transition-colors disabled:opacity-50"
-                    >
-                      Choose Different File
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {/* Done state */}
-              {uploadState === "done" && (
-                <div className="border border-[#c8e6c0] bg-[#f7fff0] rounded-2xl p-8 text-center">
-                  <CheckCircle2 className="w-10 h-10 text-[#22c55e] mx-auto mb-3" />
-                  <p className="font-bold text-[#064734]">Upload successful!</p>
-                  <p className="text-sm text-[#4a7c5f] mt-1">Data for {branch} has been recorded.</p>
-                </div>
-              )}
+        <div
+          onDragOver={(event) => {
+            event.preventDefault();
+            setDragging(true);
+          }}
+          onDragLeave={(event) => {
+            event.preventDefault();
+            setDragging(false);
+          }}
+          onDrop={onDrop}
+          className={`mt-5 rounded-2xl border-2 border-dashed p-8 text-center transition ${
+            dragging ? "border-[#064734] bg-[#f0fce8]" : "border-[#c8e6c0] bg-[#f7fff0]"
+          }`}
+        >
+          <UploadCloud className="mx-auto h-10 w-10 text-[#4a7c5f]" />
+          <p className="mt-3 text-sm text-[#064734]">
+            Drag and drop `.xlsx`, `.xls`, or `.csv` here
+          </p>
+          <p className="mt-1 text-xs text-[#4a7c5f]">or choose a file manually</p>
+          <input
+            type="file"
+            accept={accept}
+            onChange={(event) => onFileSelect(event.target.files?.[0] ?? null)}
+            className="mt-4 block w-full text-sm text-[#4a7c5f] file:mr-4 file:rounded-lg file:border-0 file:bg-[#064734] file:px-4 file:py-2 file:text-sm file:font-semibold file:text-white"
+          />
+          {file ? (
+            <div className="mt-3 inline-flex items-center gap-2 rounded-lg border border-[#c8e6c0] bg-white px-3 py-1.5 text-sm text-[#064734]">
+              <FileText className="h-4 w-4" />
+              {file.name}
             </div>
-          </div>
+          ) : null}
+        </div>
 
-          {/* Recent uploads sidebar */}
-          <div>
-            <div className="bg-white border border-[#c8e6c0] rounded-2xl p-6 sticky top-24 shadow-[0_4px_24px_rgba(6,71,52,0.06)]">
-              <h3 className="text-base font-semibold text-[#064734] mb-4 flex items-center uppercase tracking-widest text-xs">
-                <Clock className="w-4 h-4 mr-2 text-[#4a7c5f]" />
-                Recent Uploads
-              </h3>
-              {historyLoading ? (
-                <div className="flex justify-center py-8">
-                  <Loader2 className="w-6 h-6 animate-spin text-[#064734]" />
-                </div>
-              ) : !history || history.length === 0 ? (
-                <p className="text-sm text-[#4a7c5f] text-center py-8">No recent uploads for this branch.</p>
-              ) : (
-                <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
-                  {history.map((record) => (
-                    <div key={record.id} className="p-3 bg-[#f7fff0] border border-[#c8e6c0] rounded-xl text-sm hover:bg-[#f0fce8] transition-colors duration-150">
-                      <div className="flex items-start justify-between mb-1">
-                        <span className="font-semibold text-[#064734] truncate pr-2" title={record.fileName}>
-                          {record.fileName}
-                        </span>
-                        <span className="text-[10px] bg-white border border-[#c8e6c0] px-1.5 py-0.5 rounded-lg text-[#4a7c5f] shrink-0">
-                          {record.fileType}
-                        </span>
-                      </div>
-                      <p className="text-xs text-[#4a7c5f] mb-1">
-                        {format(new Date(record.uploadedAt), "MMM d, yyyy h:mm a")}
-                      </p>
-                      <p className="text-xs text-[#064734]/70 font-medium">By {record.uploadedByName}</p>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
+        {error ? <p className="mt-3 text-sm text-[#991b1b]">{error}</p> : null}
+
+        <div className="mt-5">
+          <button
+            onClick={onSubmit}
+            disabled={submitting}
+            className="inline-flex items-center gap-2 rounded-xl bg-[#064734] px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-60"
+          >
+            {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+            Upload
+          </button>
         </div>
       </div>
-    </>
+
+      <div className="rounded-2xl border border-[#c8e6c0] bg-white p-6">
+        <div className="mb-3 flex items-center justify-between">
+          <h2 className="text-lg font-semibold text-[#064734]">Upload History</h2>
+          {hasActiveUploads ? (
+            <span className="text-xs font-medium text-[#4a7c5f]">Polling every 5s</span>
+          ) : null}
+        </div>
+
+        {historyQuery.isLoading ? (
+          <div className="py-6 text-sm text-[#4a7c5f]">Loading history...</div>
+        ) : (historyQuery.data ?? []).length === 0 ? (
+          <div className="py-6 text-sm text-[#4a7c5f]">No uploads yet.</div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[720px] text-left text-sm">
+              <thead>
+                <tr className="border-b border-[#c8e6c0] text-xs uppercase tracking-wide text-[#4a7c5f]">
+                  <th className="px-2 py-2">File</th>
+                  <th className="px-2 py-2">As-On Date</th>
+                  <th className="px-2 py-2">Status</th>
+                  <th className="px-2 py-2">Rows</th>
+                  <th className="px-2 py-2">Skipped</th>
+                  <th className="px-2 py-2">Uploaded</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(historyQuery.data ?? []).map((row) => (
+                  <tr key={row.id} className="border-b border-[#edf7e7] text-[#064734]">
+                    <td className="px-2 py-2">{row.fileName}</td>
+                    <td className="px-2 py-2">{row.asOnDate.slice(0, 10)}</td>
+                    <td className="px-2 py-2">
+                      <span
+                        className={`rounded-full border px-2 py-0.5 text-xs font-semibold ${statusBadgeClass(
+                          row.status
+                        )}`}
+                      >
+                        {row.status.toLowerCase()}
+                      </span>
+                    </td>
+                    <td className="px-2 py-2">{row.rowCount ?? "-"}</td>
+                    <td className="px-2 py-2">{row.skippedRowCount ?? "-"}</td>
+                    <td className="px-2 py-2">{new Date(row.createdAt).toLocaleString()}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
