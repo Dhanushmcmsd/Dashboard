@@ -3,8 +3,13 @@ import { UploadStatus } from "@prisma/client";
 
 const ALLOWED_TRANSITIONS: Record<UploadStatus, UploadStatus[]> = {
   [UploadStatus.PENDING]: [UploadStatus.PROCESSING],
-  [UploadStatus.PROCESSING]: [UploadStatus.SUCCESS, UploadStatus.FAILED],
+  [UploadStatus.PROCESSING]: [
+    UploadStatus.SUCCESS,
+    UploadStatus.PARTIAL_SUCCESS,
+    UploadStatus.FAILED,
+  ],
   [UploadStatus.SUCCESS]: [],
+  [UploadStatus.PARTIAL_SUCCESS]: [UploadStatus.PENDING],
   [UploadStatus.FAILED]: [UploadStatus.PENDING],
 };
 

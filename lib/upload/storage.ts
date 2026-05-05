@@ -4,6 +4,7 @@ import path from "path";
 
 export interface StorageProvider {
   upload(key: string, buffer: Buffer): Promise<void>;
+  download(key: string): Promise<Buffer>;
   getSignedUrl(key: string, ttlSeconds: number): Promise<string>;
 }
 
@@ -22,6 +23,11 @@ export class LocalStorageProvider implements StorageProvider {
     const fullPath = path.join(this.baseDir, key);
     await fs.mkdir(path.dirname(fullPath), { recursive: true });
     await fs.writeFile(fullPath, buffer);
+  }
+
+  async download(key: string): Promise<Buffer> {
+    const fullPath = path.join(this.baseDir, key);
+    return fs.readFile(fullPath);
   }
 
   async getSignedUrl(key: string, ttlSeconds: number): Promise<string> {

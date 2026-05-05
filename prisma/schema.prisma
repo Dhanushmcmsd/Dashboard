@@ -45,6 +45,7 @@ enum UploadStatus {
   PENDING      // file received, queued
   PROCESSING   // parser running
   SUCCESS      // all rows committed
+  PARTIAL_SUCCESS // some rows succeeded and some failed
   FAILED       // parser error, see error_message
 }
 
@@ -297,6 +298,7 @@ model DataUpload {
   status         UploadStatus @default(PENDING)
   errorMessage   String?      // populated when status = FAILED
   rowCount       Int?         // number of data rows parsed
+  skippedRowCount Int?        // number of rows skipped during parsing
   uploadedById   String       // FK → User
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
@@ -307,6 +309,7 @@ model DataUpload {
   portfolio        Portfolio         @relation(fields: [portfolioId], references: [id])
   uploadedBy       User              @relation(fields: [uploadedById], references: [id])
   goldLoanAccounts GoldLoanAccount[]
+  processingErrors UploadProcessingError[]
 
   /// Prevent duplicate uploads for the same company+portfolio+date.
   /// Upsert by (companyId, portfolioId, asOnDate) is safe.
@@ -315,6 +318,21 @@ model DataUpload {
   @@index([portfolioId, asOnDate])
   @@index([uploadedById])
   @@index([deletedAt])   // fast filter: WHERE deleted_at IS NULL
+}
+
+model UploadProcessingError {
+  id         String   @id @default(cuid())
+  uploadId   String
+  rowNumber  Int?
+  field      String?
+  message    String
+  rawRow     Json?
+  createdAt  DateTime @default(now())
+
+  upload DataUpload @relation(fields: [uploadId], references: [id])
+
+  @@index([uploadId, rowNumber])
+  @@index([field])
 }
 
 // ---------------------------------------------------------------------------

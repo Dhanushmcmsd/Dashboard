@@ -7,6 +7,7 @@ import { FileType, PortfolioType, UploadStatus } from "@prisma/client";
 import { getStorageProvider } from "./storage";
 import { setUploadStatus } from "./status-machine";
 import { validateUploadFile } from "./validation";
+import { processUpload } from "./processing-pipeline";
 
 function assertPortfolioType(value: string): asserts value is PortfolioType {
   if (!Object.values(PortfolioType).includes(value as PortfolioType)) {
@@ -103,4 +104,14 @@ export async function createUpload(formData: FormData) {
     await setUploadStatus(upload.id, UploadStatus.FAILED, message);
     throw err;
   }
+}
+
+/**
+ * Kicks off resumable server-side processing for a staged upload row.
+ */
+export async function runUploadProcessing(uploadId: string) {
+  if (!uploadId) {
+    throw new Error("uploadId is required");
+  }
+  return processUpload(uploadId);
 }

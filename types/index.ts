@@ -1,3 +1,5 @@
+import type { GoldLoanAccount } from "@prisma/client";
+
 export const BRANCHES = [
   "Supermarket", "Gold Loan", "ML Loan", "Vehicle Loan", "Personal Loan"
 ] as const;
@@ -135,4 +137,40 @@ export interface UploadRecord {
   dateKey: string;
   monthKey: string;
   uploadedByName: string;
+}
+
+export type GoldLoanMetricMap = Record<string, number>;
+
+export interface GoldLoanBucketRow {
+  bucket: "CURRENT" | "DPD_0_30" | "DPD_31_60" | "DPD_61_90" | "DPD_90_PLUS";
+  amount: number;
+  count: number;
+  percent: number;
+}
+
+export interface GoldLoanDisbursementTrendPoint {
+  date: string;
+  amount: number;
+}
+
+export interface GoldLoanBranchPerformanceRow {
+  branch: string;
+  aum: number;
+  collection: number;
+  npa_percent: number;
+}
+
+export interface GoldLoanAlertRow {
+  type: string;
+  message: string;
+  severity: "high" | "medium" | "low";
+}
+
+export interface GoldLoanDashboardData {
+  kpis: GoldLoanMetricMap;
+  buckets: GoldLoanBucketRow[];
+  highRiskAccounts: GoldLoanAccount[];
+  disbursementTrend: GoldLoanDisbursementTrendPoint[];
+  branchPerformance: GoldLoanBranchPerformanceRow[];
+  alerts: GoldLoanAlertRow[];
 }
