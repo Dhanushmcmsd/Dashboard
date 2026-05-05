@@ -1,23 +1,24 @@
 import Link from "next/link";
-import { AlertCircle } from "lucide-react";
 
-export default function NotFound() {
+export default function NotFoundPage() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#0A0A0C] p-4">
-      <div className="bg-surface border border-border rounded-2xl p-8 max-w-md w-full text-center shadow-2xl">
-        <div className="w-16 h-16 bg-elevated rounded-full flex items-center justify-center mx-auto mb-6">
-          <AlertCircle className="w-8 h-8 text-text-muted" />
+    <div className="min-h-screen flex items-center justify-center bg-[#f7fff0] px-4">
+      <div className="max-w-md w-full text-center space-y-6">
+        <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-amber-50 border-2 border-amber-200">
+          <span className="text-4xl">🔍</span>
         </div>
-        <h2 className="text-3xl font-bold text-white mb-3">404</h2>
-        <h3 className="text-lg font-medium text-text-primary mb-4">Page Not Found</h3>
-        <p className="text-text-muted mb-8">
-          The page you are looking for doesn't exist or has been moved.
-        </p>
+        <div>
+          <h1 className="text-6xl font-black text-[#064734]">404</h1>
+          <h2 className="mt-2 text-xl font-semibold text-[#064734]">Page Not Found</h2>
+          <p className="mt-3 text-[#4a7c5f]">
+            The page you&apos;re looking for doesn&apos;t exist or has been moved.
+          </p>
+        </div>
         <Link
-          href="/login"
-          className="inline-block w-full bg-primary hover:bg-primary/90 text-white font-medium py-3 px-4 rounded-xl transition-all"
+          href="/"
+          className="inline-flex items-center justify-center px-5 py-2.5 rounded-xl bg-[#064734] text-white text-sm font-semibold hover:bg-[#053d2d] transition-colors"
         >
-          Return to Dashboard
+          Back to Dashboard
         </Link>
       </div>
     </div>
