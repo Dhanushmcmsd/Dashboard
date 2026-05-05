@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gold Loan NBFC — Management Dashboard</title>
+  <link rel="stylesheet" href="design-tokens.css">
+</head>
+<body>
+<div class="dash">
+
+  <!-- HEADER -->
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;margin-bottom:14px;">
+    <div>
+      <div style="font-size:18px;font-weight:500;color:var(--color-text-primary);">
+        Gold Loan NBFC — Management Dashboard
+      </div>
+      <div style="font-size:11px;color:var(--color-text-secondary);margin-top:4px;">
+        As on 05 May 2026 | All figures in ₹ Crore unless noted
+      </div>
+    </div>
+    <div style="display:flex;gap:6px;">
+      <button class="pbtn period-btn" onclick="setP('FTD',this)">FTD</button>
+      <button class="pbtn period-btn active" onclick="setP('MTD',this)">MTD</button>
+      <button class="pbtn period-btn" onclick="setP('YTD',this)">YTD</button>
+    </div>
+  </div>
+
+  <!-- 1. EXECUTIVE SUMMARY -->
+  <div class="sec-label">Executive summary</div>
+  <div class="kgrid" id="kpis"></div>
+
+  <!-- 2. DISBURSEMENT & COLLECTION -->
+  <div class="sec-label">Disbursement &amp; collection</div>
+  <div class="row2">
+    <div class="card">
+      <div class="ctitle">Daily disbursement trend (₹ Cr)</div>
+      <div style="position:relative;height:185px;"><canvas id="cDailyDisb"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="ctitle">Disbursement vs target — branch-wise</div>
+      <div id="tgtBars"></div>
+    </div>
+  </div>
+  <div class="row2" style="margin-top:10px;">
+    <div class="card">
+      <div class="ctitle">Disbursement vs collection (₹ Cr)</div>
+      <div class="legend">
+        <span><span class="lsq" style="background:#378ADD;"></span>Disbursement</span>
+        <span><span class="lsq" style="background:#1D9E75;"></span>Collection</span>
+      </div>
+      <div style="position:relative;height:175px;"><canvas id="cDisbColl"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="ctitle">Overdue &amp; collection overview</div>
+      <div id="collOverview"></div>
+    </div>
+  </div>
+
+  <!-- 3. BUCKET-WISE OVERDUE -->
+  <div class="sec-label">Bucket-wise overdue analysis</div>
+  <div class="card" style="margin-top:0;">
+    <table class="btable" id="bucketTbl"></table>
+  </div>
+
+  <!-- 4. NEW CUSTOMERS -->
+  <div class="sec-label">New customers</div>
+  <div class="row2">
+    <div class="card">
+      <div class="ctitle">New customer summary</div>
+      <div class="nc-grid" id="newCustKpis"></div>
+      <div style="position:relative;height:155px;"><canvas id="cNewCust"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="ctitle">New customers — branch-wise acquisition</div>
+      <table class="btable" id="newCustBranchTbl"></table>
+    </div>
+  </div>
+
+  <!-- 5. CLOSED GOLD LOANS -->
+  <div class="sec-label">Closed gold loan — grams released</div>
+  <div class="row2">
+    <div class="card">
+      <div class="ctitle">Closure summary</div>
+      <div id="closureKpis" style="margin-bottom:10px;"></div>
+      <div class="ctitle" style="margin-top:6px;">Grams released by branch</div>
+      <div id="closureByBranch"></div>
+    </div>
+    <div class="card">
+      <div class="ctitle">Closure trend — grams released (monthly)</div>
+      <div style="position:relative;height:175px;"><canvas id="cClosureGrams"></canvas></div>
+      <div style="margin-top:8px;">
+        <div class="ctitle">Closure reason split</div>
+        <div id="closureReasons"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 6. HIGH RISK -->
+  <div class="sec-label">⚠ High risk — outstanding exceeds current gold value</div>
+  <div class="card" style="margin-top:0;border:0.5px solid rgba(216,90,48,0.35);">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.65rem;flex-wrap:wrap;gap:6px;">
+      <span class="ctitle" style="margin-bottom:0;color:#D85A30;">
+        Customers where loan outstanding &gt; current gold collateral value &nbsp;|&nbsp;
+        Gold rate: ₹<span id="goldRateDisplay">9,240</span>/g
+      </span>
+      <span style="font-size:11px;color:var(--color-text-secondary);">Requires immediate management action</span>
+    </div>
+    <div class="risk-summary" id="riskSummary"></div>
+    <table class="btable" id="highRiskTbl"></table>
+  </div>
+
+  <!-- 7. NPA & RISK MONITORING -->
+  <div class="sec-label">NPA &amp; risk monitoring</div>
+  <div class="row3">
+    <div class="card">
+      <div class="ctitle">NPA &amp; SMA levels</div>
+      <div style="position:relative;height:190px;"><canvas id="cNpa"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="ctitle">AUM by product mix</div>
+      <div style="position:relative;height:145px;"><canvas id="cAum"></canvas></div>
+      <div class="legend" style="margin-top:6px;margin-bottom:0;">
+        <span><span class="lsq" style="background:#185FA5;"></span>Bullet 42%</span>
+        <span><span class="lsq" style="background:#1D9E75;"></span>OD 28%</span>
+        <span><span class="lsq" style="background:#BA7517;"></span>Agri 15%</span>
+        <span><span class="lsq" style="background:#993C1D;"></span>Agri-J 10%</span>
+        <span><span class="lsq" style="background:#888780;"></span>Others 5%</span>
+      </div>
+    </div>
+    <div class="card">
+      <div class="ctitle">Gold security &amp; LTV</div>
+      <div id="ltvSection"></div>
+    </div>
+  </div>
+
+  <!-- 8. BRANCH PERFORMANCE -->
+  <div class="sec-label">Branch performance</div>
+  <div class="card">
+    <table class="btable" id="branchTbl"></table>
+  </div>
+
+  <!-- 9. ALERTS & EXCEPTIONS -->
+  <div class="sec-label">Alerts &amp; exceptions</div>
+  <div class="alert-box" id="alerts"></div>
+
+</div><!-- /.dash -->
+
+<!-- Scripts: Chart.js CDN first, then data, then render/section/chart files -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script src="gold-loan-data.js"></script>
+<script src="gold-loan-render.js"></script>
+<script src="gold-loan-charts.js"></script>
+<script src="gold-loan-sections.js"></script>
+
+<script>renderAll();</script>
+
+</body>
+</html>
