@@ -251,6 +251,7 @@ model Company {
   portfolios  Portfolio[]
   dataUploads DataUpload[]
   kpiSnapshots KpiSnapshot[]
+  goldLoanAccounts GoldLoanAccount[]
 
   @@index([slug])
   @@index([isActive])
