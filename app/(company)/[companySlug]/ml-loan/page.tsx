@@ -7,10 +7,11 @@ import { notFound } from "next/navigation";
 export default async function MlLoanPage({
   params,
 }: {
-  params: { companySlug: string };
+  params: Promise<{ companySlug: string }>;
 }) {
+  const { companySlug } = await params;
   try {
-    await withCompanyScope(params.companySlug);
+    await withCompanyScope(companySlug);
   } catch (e) {
     if (e instanceof Response) {
       if (e.status === 401 || e.status === 403) {
@@ -24,7 +25,7 @@ export default async function MlLoanPage({
   return (
     <div className="space-y-6">
       <RouteBanner
-        route={`/${params.companySlug}/ml-loan`}
+        route={`/${companySlug}/ml-loan`}
         role="company_admin | super_admin"
       />
       <ComingSoon title="ML Loan" />

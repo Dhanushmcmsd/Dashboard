@@ -41,11 +41,14 @@ export default async function GoldLoanPage({
   params,
   searchParams,
 }: {
-  params: { companySlug: string };
-  searchParams?: { period?: string };
+  params: Promise<{ companySlug: string }>;
+  searchParams?: Promise<{ period?: string }>;
 }) {
+  const { companySlug } = await params;
+  const resolvedSearch = await (searchParams ?? Promise.resolve({}));
+
   try {
-    await withCompanyScope(params.companySlug);
+    await withCompanyScope(companySlug);
   } catch (e) {
     if (e instanceof Response) {
       if (e.status === 401 || e.status === 403) {
@@ -56,7 +59,7 @@ export default async function GoldLoanPage({
     throw e;
   }
 
-  const period = normalizePeriod(searchParams?.period);
+  const period = normalizePeriod(resolvedSearch?.period);
 
   return (
     <div className="space-y-6">
@@ -74,7 +77,7 @@ export default async function GoldLoanPage({
               return (
                 <Link
                   key={item}
-                  href={`/${params.companySlug}/gold-loan?period=${item}`}
+                  href={`/${companySlug}/gold-loan?period=${item}`}
                   className={`rounded-lg px-4 py-2 text-sm font-semibold transition ${
                     active
                       ? "bg-[#064734] text-white"
