@@ -19,45 +19,34 @@ export const authOptions: AuthOptions = {
 
         const user = await prisma.user.findUnique({
           where: { email: credentials.email },
-          // Include organizationId so it flows into the JWT
           select: {
-            id:             true,
-            name:           true,
-            email:          true,
-            password:       true,
-            role:           true,
-            branches:       true,
-            isActive:       true,
-            passwordSet:    true,
-            organizationId: true,
+            id:          true,
+            name:        true,
+            email:       true,
+            password:    true,
+            role:        true,
+            isActive:    true,
+            passwordSet: true,
+            company: {
+              select: { id: true, slug: true },
+            },
           },
         });
 
-        if (!user) {
-          throw new Error("No account found with this email");
-        }
-
-        if (!user.isActive) {
-          throw new Error("Your account is pending admin approval");
-        }
-
-        if (!user.passwordSet) {
-          throw new Error("Password not set. Please use your setup link");
-        }
+        if (!user) throw new Error("No account found with this email");
+        if (!user.isActive) throw new Error("Your account is pending admin approval");
+        if (!user.passwordSet) throw new Error("Password not set. Please use your setup link");
 
         const isValid = await bcrypt.compare(credentials.password, user.password);
-        if (!isValid) {
-          throw new Error("Incorrect password");
-        }
+        if (!isValid) throw new Error("Incorrect password");
 
         return {
-          id:             user.id,
-          name:           user.name,
-          email:          user.email,
-          role:           user.role as AppRole,
-          branches:       user.branches,
-          // null for SUPER_ADMIN accounts not tied to an org
-          organizationId: user.organizationId ?? null,
+          id:          user.id,
+          name:        user.name,
+          email:       user.email,
+          role:        user.role as AppRole,
+          companyId:   user.company?.id   ?? null,
+          companySlug: user.company?.slug ?? null,
         };
       },
     }),
@@ -76,32 +65,44 @@ export const authOptions: AuthOptions = {
      */
     async jwt({ token, user }) {
       if (user) {
-        // First sign-in: copy from the authorize() return value
-        token.userId         = user.id;
-        token.role           = (user as any).role as AppRole;
-        token.branches       = (user as any).branches as string[];
-        token.organizationId = (user as any).organizationId as string | null;
+        token.userId      = user.id;
+        token.role        = (user as any).role        as AppRole;
+        token.companyId   = (user as any).companyId   as string | null;
+        token.companySlug = (user as any).companySlug as string | null;
       }
       return token;
     },
 
     /**
      * Session callback — runs on every getServerSession() call.
-     * Copies token fields → session.user so components/routes
-     * always read from session, never from the token directly.
+     * Copies token fields → session.user.
      */
     async session({ session, token }) {
       if (token) {
         session.user = {
           ...session.user,
-          // Use token.userId (set above) as the canonical id
-          id:             token.userId as string,
-          role:           token.role as AppRole,
-          branches:       token.branches as string[],
-          organizationId: token.organizationId as string | null,
+          userId:      token.userId      as string,
+          role:        token.role        as AppRole,
+          companyId:   token.companyId   as string | null,
+          companySlug: token.companySlug as string | null,
         };
       }
       return session;
+    },
+
+    /**
+     * Redirect callback — send super_admin to /admin, others to /:companySlug.
+     */
+    async redirect({ url, baseUrl, token }: any) {
+      // Only apply on sign-in (relative redirect from NextAuth)
+      if (url.startsWith(baseUrl) || url === "/") {
+        const role        = token?.role        as AppRole | undefined;
+        const companySlug = token?.companySlug as string  | undefined;
+
+        if (role === "super_admin") return `${baseUrl}/admin`;
+        if (companySlug)            return `${baseUrl}/${companySlug}`;
+      }
+      return url.startsWith(baseUrl) ? url : baseUrl;
     },
   },
 

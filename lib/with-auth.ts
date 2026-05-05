@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
-import type { Role } from '@prisma/client';
+import type { AppRole } from '@/types';
 
 type Handler = (req: NextRequest, session: Awaited<ReturnType<typeof getServerSession>>) => Promise<NextResponse>;
 
@@ -25,9 +25,10 @@ export function withAuth(handler: Handler) {
 
 /**
  * Wraps an API route handler with session + role validation.
- * Usage: export const POST = withRole(['ADMIN', 'SUPER_ADMIN'], async (req, session) => { ... })
+ * SUPER_ADMIN is always allowed through regardless of allowedRoles.
+ * Usage: export const POST = withRole(['company_admin'], async (req, session) => { ... })
  */
-export function withRole(allowedRoles: Role[], handler: Handler) {
+export function withRole(allowedRoles: AppRole[], handler: Handler) {
   return async (req: NextRequest) => {
     const session = await getServerSession(authOptions);
 
@@ -44,7 +45,8 @@ export function withRole(allowedRoles: Role[], handler: Handler) {
       return NextResponse.json({ error: 'Account inactive' }, { status: 403 });
     }
 
-    if (!allowedRoles.includes(user.role)) {
+    const isSuperAdmin = (user.role as AppRole) === 'super_admin';
+    if (!isSuperAdmin && !allowedRoles.includes(user.role as AppRole)) {
       return NextResponse.json({ error: 'Forbidden: insufficient role' }, { status: 403 });
     }
 

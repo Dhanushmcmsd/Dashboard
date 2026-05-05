@@ -1,56 +1,66 @@
 import { withAuth } from "next-auth/middleware";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import type { AppRole } from "@/types";
 
 /**
  * Edge middleware — runs before every matched request.
  *
- * Protected path groups:
- *   /admin/*        → ADMIN, SUPER_ADMIN
- *   /employee/*     → EMPLOYEE
- *   /management/*   → MANAGEMENT, SUPER_ADMIN
- *   /api/*          → any authenticated session
- *     (except /api/auth/* — NextAuth own routes, always public)
- *     (except /api/health  — uptime checks)
+ * Route protection:
+ *   /admin/*              → super_admin only
+ *   /:companySlug/*       → company_admin or employee (company-scoped)
+ *   /api/*                → any authenticated session
+ *     except /api/auth/*  — NextAuth own routes (always public)
+ *     except /api/health  — uptime checks
  *
- * Behavior:
- *   - No session           → redirect to /login
- *   - Wrong role for path  → redirect to their own dashboard
- *   - Static assets, public pages → untouched
+ * Login redirect targets:
+ *   super_admin   → /admin
+ *   others        → /:companySlug (from token.companySlug)
  *
- * Note: isActive liveness check is handled in requireAuth() inside each
- * API route handler. Edge middleware cannot call Prisma (no Node.js runtime).
+ * Note: isActive liveness check is handled inside requireAuth() / withCompanyScope()
+ * in each API route handler. Edge middleware cannot call Prisma (no Node.js runtime).
  */
 export default withAuth(
   function middleware(req: NextRequest) {
-    const token    = (req as any).nextauth?.token;
-    const role     = token?.role as string | undefined;
-    const pathname = req.nextUrl.pathname;
+    const token       = (req as any).nextauth?.token;
+    const role        = token?.role        as AppRole | undefined;
+    const companySlug = token?.companySlug as string  | undefined;
+    const pathname    = req.nextUrl.pathname;
 
-    // ── Role-based path gating ──────────────────────────────────────────────
-
-    // /admin/* — only ADMIN or SUPER_ADMIN
+    // ── /admin/* — super_admin only ─────────────────────────────────────────
     if (pathname.startsWith("/admin")) {
-      if (role !== "ADMIN" && role !== "SUPER_ADMIN") {
-        return NextResponse.redirect(new URL("/login", req.url));
+      if (role !== "super_admin") {
+        // Non-super_admin users get redirected to their own dashboard
+        const dest = companySlug ? `/${companySlug}` : "/login";
+        return NextResponse.redirect(new URL(dest, req.url));
       }
     }
 
-    // /employee/* — only EMPLOYEE
-    if (pathname.startsWith("/employee")) {
-      if (role !== "EMPLOYEE" && role !== "SUPER_ADMIN") {
+    // ── /:companySlug/* — company_admin or employee ──────────────────────────
+    // Match paths like /acme-corp/... but exclude known top-level routes
+    const companyRouteMatch = pathname.match(/^\/([a-z0-9-]+)(\/.*)?$/);
+    const reservedRoutes    = new Set(["admin", "login", "signup", "api", "_next", "public"]);
+
+    if (companyRouteMatch && !reservedRoutes.has(companyRouteMatch[1])) {
+      const routeSlug = companyRouteMatch[1];
+
+      // super_admin can access any company slug
+      if (role === "super_admin") return NextResponse.next();
+
+      // company_admin and employee must own this slug
+      if (!companySlug || companySlug !== routeSlug) {
         return NextResponse.redirect(new URL("/login", req.url));
+      }
+
+      // employee can only access upload routes under /:companySlug/upload/*
+      if (role === "employee") {
+        const subPath = companyRouteMatch[2] ?? "/";
+        if (!subPath.startsWith("/upload") && subPath !== "/") {
+          return NextResponse.redirect(new URL(`/${companySlug}/upload`, req.url));
+        }
       }
     }
 
-    // /management/* — only MANAGEMENT or SUPER_ADMIN
-    if (pathname.startsWith("/management")) {
-      if (role !== "MANAGEMENT" && role !== "SUPER_ADMIN") {
-        return NextResponse.redirect(new URL("/login", req.url));
-      }
-    }
-
-    // All other matched paths — authenticated only (no role restriction)
     return NextResponse.next();
   },
   {
@@ -58,7 +68,6 @@ export default withAuth(
       /**
        * Return true to allow the request to proceed to the middleware function.
        * Return false to redirect to the signIn page automatically.
-       * We return !!token so any unauthenticated request hits the login redirect.
        */
       authorized: ({ token }) => !!token,
     },

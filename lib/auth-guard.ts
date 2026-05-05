@@ -19,16 +19,10 @@ type AuthResult = AuthError | AuthOk;
  * Validates that a session exists, the user is still active in the DB,
  * and (optionally) the user's role is in the allowedRoles list.
  *
- * SUPER_ADMIN is always included implicitly when allowedRoles is provided —
- * they have platform-wide access.
+ * super_admin is always included implicitly — they have platform-wide access.
  *
  * @param allowedRoles  Omit to allow any authenticated user.
- *                      Pass ["ADMIN"] to restrict to ADMIN + SUPER_ADMIN.
- *
- * @example
- * const auth = await requireAuth(["MANAGEMENT"]);
- * if (auth.error) return errorResponse(auth.error, auth.status);
- * const user = auth.user; // SessionUser
+ *                      Pass ["company_admin"] to restrict to company_admin + super_admin.
  */
 export async function requireAuth(allowedRoles?: AppRole[]): Promise<AuthResult> {
   const session = await getServerSession(authOptions);
@@ -41,7 +35,7 @@ export async function requireAuth(allowedRoles?: AppRole[]): Promise<AuthResult>
 
   // Always verify liveness in DB — catches deactivated-while-logged-in
   const dbUser = await prisma.user.findUnique({
-    where:  { id: user.id },
+    where:  { id: user.userId },
     select: { isActive: true },
   });
 
@@ -49,10 +43,10 @@ export async function requireAuth(allowedRoles?: AppRole[]): Promise<AuthResult>
     return { error: "Account is deactivated", status: 401 };
   }
 
-  // Role check — SUPER_ADMIN is always allowed through
+  // Role check — super_admin is always allowed through
   if (allowedRoles && allowedRoles.length > 0) {
-    const isSuperAdmin   = user.role === "SUPER_ADMIN";
-    const roleAllowed    = allowedRoles.includes(user.role);
+    const isSuperAdmin = user.role === "super_admin";
+    const roleAllowed  = allowedRoles.includes(user.role);
     if (!isSuperAdmin && !roleAllowed) {
       return { error: "Forbidden", status: 403 };
     }
@@ -62,7 +56,7 @@ export async function requireAuth(allowedRoles?: AppRole[]): Promise<AuthResult>
 }
 
 // ---------------------------------------------------------------------------
-// requireCompanyScope
+// requireCompanyScope  (legacy alias — prefer withCompanyScope from lib/with-company-scope.ts)
 // ---------------------------------------------------------------------------
 
 type ScopeError  = { error: string; status: number; user?: never };
@@ -70,44 +64,29 @@ type ScopeOk     = { error?: never; status?: never; user: SessionUser };
 type ScopeResult = ScopeError | ScopeOk;
 
 /**
- * Extends requireAuth() with organization-boundary enforcement.
+ * Extends requireAuth() with company-boundary enforcement.
  *
- * Rules:
- * - SUPER_ADMIN → always allowed (cross-org platform access)
- * - All other roles → session.user.organizationId must equal targetOrgId
- *
- * Call this AFTER requireAuth() or combine with it:
- *
- * @example
- * const auth = await requireAuth(["MANAGEMENT"]);
- * if (auth.error) return errorResponse(auth.error, auth.status);
- *
- * const scope = await requireCompanyScope(auth.user, params.orgId);
- * if (scope.error) return errorResponse(scope.error, scope.status);
+ * Prefer withCompanyScope() in lib/with-company-scope.ts for server actions
+ * and route handlers — it accepts a slug instead of an ID.
  *
  * @param user          The SessionUser from a successful requireAuth() call.
- * @param targetOrgId   The organization ID the route is operating on.
+ * @param targetCompanyId   The company ID the route is operating on.
  */
 export async function requireCompanyScope(
   user: SessionUser,
-  targetOrgId: string
+  targetCompanyId: string
 ): Promise<ScopeResult> {
-  // SUPER_ADMIN bypasses all org restrictions
-  if (user.role === "SUPER_ADMIN") {
-    return { user };
-  }
+  if (user.role === "super_admin") return { user };
 
-  // Non-org users (edge case: misconfigured account) are always blocked
-  if (!user.organizationId) {
+  if (!user.companyId) {
     return {
-      error:  "No organization assigned to this account. Contact your administrator.",
+      error:  "No company assigned to this account. Contact your administrator.",
       status: 403,
     };
   }
 
-  // Core check: session org must match the target org
-  if (user.organizationId !== targetOrgId) {
-    return { error: "Forbidden: cross-organization access denied", status: 403 };
+  if (user.companyId !== targetCompanyId) {
+    return { error: "Forbidden: cross-company access denied", status: 403 };
   }
 
   return { user };

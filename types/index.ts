@@ -6,8 +6,14 @@ export type BranchName = (typeof BRANCHES)[number];
 export const DPD_BUCKETS = ["0", "1-30", "31-60", "61-90", "91-180", "181+"] as const;
 export type DpdBucket = (typeof DPD_BUCKETS)[number];
 
-/** Must match Prisma Role enum exactly */
-export type AppRole = "SUPER_ADMIN" | "ADMIN" | "MANAGEMENT" | "EMPLOYEE";
+/**
+ * Canonical role union — must match Prisma Role enum exactly.
+ *
+ * super_admin    — cross-company access, admin UI
+ * company_admin  — single-company access, full dashboard
+ * employee       — single-company access, upload only
+ */
+export type AppRole = "super_admin" | "company_admin" | "employee";
 
 export interface DpdBucketData {
   bucket: DpdBucket;
@@ -17,14 +23,11 @@ export interface DpdBucketData {
 
 export interface ParsedRow {
   branch: BranchName;
-  // Core metrics used across all dashboards
-  closingBalance: number;     // Total AUM
-  disbursement: number;       // MTD disbursement
-  collection: number;         // Principal + interest collected
-  npa: number;                // GNPA amount (DPD > 90)
+  closingBalance: number;
+  disbursement: number;
+  collection: number;
+  npa: number;
   dpdBuckets: Record<DpdBucket, { count: number; amount: number }>;
-
-  // Extended Gold Loan / Loan metrics (optional)
   totalAccounts?: number;
   totalCustomers?: number;
   avgYield?: number;
@@ -109,20 +112,18 @@ export interface ApiResponse<T = undefined> {
 
 /**
  * Shape of session.user after NextAuth JWT/Session callbacks.
- * organizationId is null only for SUPER_ADMIN.
+ *
+ * companyId / companySlug are null only for super_admin.
  */
 export interface SessionUser {
-  id: string;
+  userId: string;
   name: string;
   email: string;
   role: AppRole;
-  branches: string[];
-  /**
-   * The organization this user belongs to.
-   * null for SUPER_ADMIN (they span all orgs).
-   * Must be present for all other roles.
-   */
-  organizationId: string | null;
+  /** Prisma Company.id — null for super_admin */
+  companyId: string | null;
+  /** URL-safe company slug — null for super_admin */
+  companySlug: string | null;
 }
 
 export interface UploadRecord {
