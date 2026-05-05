@@ -49,7 +49,7 @@ export async function POST(req: Request) {
     const alert = await prisma.alert.create({
       data: {
         message: result.data.message,
-        sentBy: user.id,
+        sentBy: user.userId,
       },
       include: { user: true },
     });
