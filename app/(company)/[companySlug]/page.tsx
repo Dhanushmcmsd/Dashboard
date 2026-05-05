@@ -1,5 +1,7 @@
 import { withCompanyScope } from "@/lib/with-company-scope";
 import { RouteBanner } from "@/components/dev/RouteBanner";
+import { redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 
 export default async function CompanyHomePage({
   params,
@@ -10,7 +12,12 @@ export default async function CompanyHomePage({
   try {
     user = await withCompanyScope(params.companySlug);
   } catch (e) {
-    if (e instanceof Response) return new Response(e.body, { status: e.status });
+    if (e instanceof Response) {
+      if (e.status === 401 || e.status === 403) {
+        redirect("/login");
+      }
+      notFound();
+    }
     throw e;
   }
 
