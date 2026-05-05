@@ -1,6 +1,8 @@
 import { withCompanyScope } from "@/lib/with-company-scope";
 import Link from "next/link";
 import DataNotAvailable from "@/components/management/DataNotAvailable";
+import { redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 
 type Period = "FTD" | "MTD" | "YTD";
 
@@ -45,7 +47,12 @@ export default async function GoldLoanPage({
   try {
     await withCompanyScope(params.companySlug);
   } catch (e) {
-    if (e instanceof Response) return new Response(e.body, { status: e.status });
+    if (e instanceof Response) {
+      if (e.status === 401 || e.status === 403) {
+        redirect("/login");
+      }
+      notFound();
+    }
     throw e;
   }
 
