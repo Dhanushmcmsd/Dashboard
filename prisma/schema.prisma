@@ -7,8 +7,80 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// ===========================================================================
+// ENUMS
+// ===========================================================================
+
+enum Role {
+  SUPER_ADMIN
+  ADMIN
+  MANAGEMENT
+  EMPLOYEE
+}
+
+enum FileType {
+  EXCEL
+  HTML
+  CSV
+}
+
+/// Which product line a portfolio belongs to
+enum PortfolioType {
+  GOLD_LOAN
+  ML_LOAN
+  VEHICLE_LOAN
+  PERSONAL_LOAN
+  SUPERMARKET
+}
+
+/// Lifecycle phase of a portfolio — controls which features are enabled
+enum PortfolioPhase {
+  ONBOARDING   // schema ready, no data yet
+  ACTIVE       // live data ingestion
+  ARCHIVED     // read-only history
+}
+
+/// Upload processing state machine
+enum UploadStatus {
+  PENDING      // file received, queued
+  PROCESSING   // parser running
+  SUCCESS      // all rows committed
+  FAILED       // parser error, see error_message
+}
+
+/// DPD ageing bucket for a gold loan account
+enum LoanBucket {
+  CURRENT
+  DPD_0_30
+  DPD_31_60
+  DPD_61_90
+  DPD_90_PLUS
+}
+
+/// Type of gold loan transaction
+enum TxnType {
+  DISBURSEMENT
+  COLLECTION
+  CLOSURE
+  PART_PAYMENT
+  INTEREST_ACCRUAL
+}
+
+/// Aggregation window for a KPI snapshot
+enum PeriodType {
+  FTD   // from the day
+  MTD   // month-to-date
+  YTD   // year-to-date
+  CUSTOM
+}
+
+// ===========================================================================
+// EXISTING MODELS  (unchanged structure — safe to migrate onto live data)
+// ===========================================================================
+
 // ---------------------------------------------------------------------------
-// Multi-tenant organization (add more fields as you white-label)
+// Multi-tenant organization — EXISTING. Not renamed; new Company model added
+// separately to avoid breaking existing User.organizationId FK.
 // ---------------------------------------------------------------------------
 model Organization {
   id          String   @id @default(cuid())
@@ -35,17 +107,25 @@ model User {
   passwordSet         Boolean              @default(false)
   createdAt           DateTime             @default(now())
   updatedAt           DateTime             @updatedAt
-  // Multi-tenancy
+
+  // Multi-tenancy (existing — links to legacy Organization)
   organizationId      String?
   organization        Organization?        @relation(fields: [organizationId], references: [id])
+
+  // New tenant isolation — links to new Company model (nullable for migration safety)
+  companyId           String?              // tenant isolation key
+  company             Company?             @relation(fields: [companyId], references: [id])
+
   // Relations
   alerts              Alert[]
   uploads             Upload[]
+  dataUploads         DataUpload[]
   auditLogs           AuditLog[]
   passwordResetTokens PasswordResetToken[]
   dashboardLayouts    DashboardLayout[]
 
   @@index([organizationId])
+  @@index([companyId])
   @@index([email])
 }
 
@@ -61,6 +141,8 @@ model PasswordResetToken {
   @@index([tokenHash])
 }
 
+/// Legacy upload model — kept intact; new DataUpload model replaces it for
+/// gold-loan-era ingestion. Do not remove until migration Step 5.1 is complete.
 model Upload {
   id          String   @id @default(cuid())
   branch      String
@@ -98,23 +180,23 @@ model MonthlySnapshot {
 }
 
 model Alert {
-  id      String   @id @default(cuid())
-  message String
-  sentBy  String
-  sentAt  DateTime @default(now())
-  user    User     @relation(fields: [sentBy], references: [id])
+  id        String    @id @default(cuid())
+  message   String
+  sentBy    String
+  sentAt    DateTime  @default(now())
+  /// Severity level — defaults to INFO for backward compatibility with existing rows
+  severity  AlertSeverity @default(INFO)
+  user      User      @relation(fields: [sentBy], references: [id])
 
   @@index([sentAt])
+  @@index([severity])
 }
 
-// ---------------------------------------------------------------------------
-// Audit trail — log every meaningful action
-// ---------------------------------------------------------------------------
 model AuditLog {
   id         String   @id @default(cuid())
   userId     String
-  action     String   // AuditAction string enum (validated in app layer)
-  resource   String   // e.g. "Upload", "User", "Alert"
+  action     String
+  resource   String
   resourceId String?
   metadata   Json     @default("{}")
   ipAddress  String?
@@ -126,15 +208,12 @@ model AuditLog {
   @@index([createdAt])
 }
 
-// ---------------------------------------------------------------------------
-// Custom Dashboard Builder
-// ---------------------------------------------------------------------------
 model DashboardLayout {
   id        String   @id @default(cuid())
   userId    String
   name      String
-  layout    Json     // react-grid-layout positions: [{i, x, y, w, h}]
-  widgets   Json     // widget configs: [{id, type, title, dataSource, metric, dateRange, filters}]
+  layout    Json
+  widgets   Json
   isShared  Boolean  @default(false)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -150,14 +229,187 @@ model playing_with_neon {
   value Float? @db.Real
 }
 
-enum Role {
-  SUPER_ADMIN
-  ADMIN
-  MANAGEMENT
-  EMPLOYEE
+// ===========================================================================
+// NEW MODELS  (added in Batch 3)
+// ===========================================================================
+
+// ---------------------------------------------------------------------------
+// Company — canonical tenant record.
+// Distinct from Organization (legacy) to avoid breaking existing FK chains.
+// Once all users are migrated to Company, Organization can be archived.
+// ---------------------------------------------------------------------------
+model Company {
+  id          String      @id @default(cuid())
+  slug        String      @unique   // e.g. "supra-pacific" — used in URLs
+  name        String
+  isActive    Boolean     @default(true)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  // Relations
+  users       User[]
+  portfolios  Portfolio[]
+  dataUploads DataUpload[]
+  kpiSnapshots KpiSnapshot[]
+
+  @@index([slug])
+  @@index([isActive])
 }
 
-enum FileType {
-  EXCEL
-  HTML
+// ---------------------------------------------------------------------------
+// Portfolio — one per product line per company.
+// Drives which parser runs and which KPI keys are valid.
+// ---------------------------------------------------------------------------
+model Portfolio {
+  id          String        @id @default(cuid())
+  companyId   String        // tenant isolation key
+  type        PortfolioType
+  isActive    Boolean       @default(true)
+  phase       PortfolioPhase @default(ONBOARDING)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  // Relations
+  company      Company      @relation(fields: [companyId], references: [id])
+  dataUploads  DataUpload[]
+  goldLoanAccounts GoldLoanAccount[]
+  kpiSnapshots KpiSnapshot[]
+
+  /// One active portfolio per type per company
+  @@unique([companyId, type])
+  @@index([companyId])
+  @@index([type])
+}
+
+// ---------------------------------------------------------------------------
+// DataUpload — replaces legacy Upload for structured data ingestion.
+// Uses soft delete so audit trail is preserved even on user-initiated deletes.
+// ---------------------------------------------------------------------------
+model DataUpload {
+  id             String       @id @default(cuid())
+  companyId      String       // tenant isolation key
+  portfolioId    String
+  fileType       FileType
+  fileName       String
+  asOnDate       DateTime     // the business date the file represents
+  status         UploadStatus @default(PENDING)
+  errorMessage   String?      // populated when status = FAILED
+  rowCount       Int?         // number of data rows parsed
+  uploadedById   String       // FK → User
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  deletedAt      DateTime?    // soft delete — set instead of hard deleting
+
+  // Relations
+  company          Company           @relation(fields: [companyId], references: [id])
+  portfolio        Portfolio         @relation(fields: [portfolioId], references: [id])
+  uploadedBy       User              @relation(fields: [uploadedById], references: [id])
+  goldLoanAccounts GoldLoanAccount[]
+
+  /// Prevent duplicate uploads for the same company+portfolio+date.
+  /// Upsert by (companyId, portfolioId, asOnDate) is safe.
+  @@unique([companyId, portfolioId, asOnDate])
+  @@index([companyId, status])
+  @@index([portfolioId, asOnDate])
+  @@index([uploadedById])
+  @@index([deletedAt])   // fast filter: WHERE deleted_at IS NULL
+}
+
+// ---------------------------------------------------------------------------
+// GoldLoanAccount — one row per account per upload snapshot.
+// Soft-deleted rather than removed so historical snapshots stay intact.
+// ---------------------------------------------------------------------------
+model GoldLoanAccount {
+  id                    String      @id @default(cuid())
+  companyId             String      // tenant isolation key
+  portfolioId           String
+  uploadId              String
+  /// Account number is unique per company (not globally).
+  /// Composite unique enforces this; plain @unique would be wrong.
+  accountNumber         String
+  customerName          String
+  branch                String
+  principalOutstanding  Float       // in INR
+  goldWeightGrams       Float       // total gold pledged in grams
+  ltvPercent            Float       // loan-to-value ratio as a percentage
+  interestRate          Float       // annual rate as a percentage
+  disbursementDate      DateTime
+  maturityDate          DateTime?
+  status                String      @default("ACTIVE")  // ACTIVE | CLOSED | NPA
+  bucket                LoanBucket  @default(CURRENT)
+  isNpa                 Boolean     @default(false)
+  createdAt             DateTime    @default(now())
+  updatedAt             DateTime    @updatedAt
+  deletedAt             DateTime?   // soft delete
+
+  // Relations
+  company     Company       @relation(fields: [companyId], references: [id])
+  portfolio   Portfolio     @relation(fields: [portfolioId], references: [id])
+  upload      DataUpload    @relation(fields: [uploadId], references: [id])
+  txns        GoldLoanTxn[]
+
+  /// Upsert key: same account in same company for same upload is idempotent
+  @@unique([companyId, accountNumber, uploadId])
+  @@index([companyId, branch])
+  @@index([companyId, bucket])
+  @@index([companyId, isNpa])
+  @@index([uploadId])
+  @@index([deletedAt])   // fast filter: WHERE deleted_at IS NULL
+}
+
+// ---------------------------------------------------------------------------
+// GoldLoanTxn — append-only ledger of events on a gold loan account.
+// Never soft-deleted; incorrect entries are reversed with a new row.
+// ---------------------------------------------------------------------------
+model GoldLoanTxn {
+  id           String    @id @default(cuid())
+  accountId    String
+  txnDate      DateTime
+  txnType      TxnType
+  amount       Float     // positive for inflow (collection/closure), negative for disbursement
+  balanceAfter Float     // running principal balance after this txn
+  notes        String?   // free-text for exceptions or manual entries
+  createdAt    DateTime  @default(now())
+
+  // Relations
+  account GoldLoanAccount @relation(fields: [accountId], references: [id])
+
+  @@index([accountId, txnDate])
+  @@index([txnDate])
+  @@index([txnType])
+}
+
+// ---------------------------------------------------------------------------
+// KpiSnapshot — pre-computed aggregates per company+portfolio+period.
+// One row per metric key (EAV-style) for maximum flexibility without ALTER TABLE.
+// ---------------------------------------------------------------------------
+model KpiSnapshot {
+  id           String     @id @default(cuid())
+  companyId    String     // tenant isolation key
+  portfolioId  String
+  periodType   PeriodType
+  asOnDate     DateTime
+  metricKey    String     // e.g. "totalOutstanding", "npaPercent", "newCustomerCount"
+  metricValue  Float
+  computedAt   DateTime   @default(now())
+
+  // Relations
+  company   Company   @relation(fields: [companyId], references: [id])
+  portfolio Portfolio @relation(fields: [portfolioId], references: [id])
+
+  /// One value per metric per company+portfolio+period+date.
+  /// Safe to upsert (recompute) without creating duplicates.
+  @@unique([companyId, portfolioId, periodType, asOnDate, metricKey])
+  @@index([companyId, portfolioId, periodType, asOnDate])
+  @@index([metricKey])
+}
+
+// ===========================================================================
+// NEW ENUM (added in Batch 3)
+// ===========================================================================
+
+enum AlertSeverity {
+  INFO
+  WARNING
+  CRITICAL
 }
