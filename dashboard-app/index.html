@@ -5,16 +5,22 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Gold Loan NBFC — Management Dashboard</title>
   <link rel="stylesheet" href="design-tokens.css">
+  <!-- Chart.js must load before data/render scripts -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+  <script src="gold-loan-data.js"></script>
+  <script src="gold-loan-charts.js"></script>
+  <script src="gold-loan-sections.js"></script>
+  <script src="gold-loan-render.js"></script>
 </head>
 <body>
   <div class="dash">
 
     <!-- Header -->
-    <div style="margin-bottom: 10px;">
-      <div style="font-size: 18px; font-weight: 500; color: var(--color-text-primary);">
+    <div style="margin-bottom:10px;">
+      <div style="font-size:18px;font-weight:500;color:var(--color-text-primary);">
         Gold Loan NBFC — Management Dashboard
       </div>
-      <div style="font-size: 11px; color: var(--color-text-secondary); margin-top: 4px;">
+      <div style="font-size:11px;color:var(--color-text-secondary);margin-top:4px;">
         As on 05 May 2026 | All figures in ₹ Crore unless noted
       </div>
     </div>
@@ -41,9 +47,10 @@
     <!-- Dashboard Content -->
     <div id="dashboard-content"></div>
 
-  </div>
+  </div><!-- /.dash -->
 
   <script>
+    /* ── Company switcher ── */
     function selectCompany(name, btn) {
       document.querySelectorAll('.company-nav .pbtn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
@@ -59,6 +66,7 @@
       }
     }
 
+    /* ── Product switcher ── */
     function selectProduct(name, btn) {
       document.querySelectorAll('.product-nav .pbtn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
@@ -71,13 +79,37 @@
       }
     }
 
-    function showGoldLoanDashboard() {
-      document.getElementById('dashboard-content').innerHTML =
-        '<p style="color:var(--color-text-secondary);padding:2rem">' +
-        'Gold Loan dashboard will load here in Part 3+</p>';
+    /* ── Load Gold Loan dashboard via fetch ── */
+    async function showGoldLoanDashboard() {
+      const container = document.getElementById('dashboard-content');
+
+      // Loading state
+      container.innerHTML = '<div class="placeholder-card">Loading dashboard…</div>';
+
+      try {
+        const response = await fetch('gold-loan-dashboard.html');
+        if (!response.ok) throw new Error('HTTP ' + response.status);
+        const html = await response.text();
+
+        // Extract only the inner content of <div class="dash"> from the fetched page
+        // so we don't double-nest the .dash wrapper or re-load scripts
+        const parser = new DOMParser();
+        const doc    = parser.parseFromString(html, 'text/html');
+        const dashEl = doc.querySelector('.dash');
+        container.innerHTML = dashEl ? dashEl.innerHTML : html;
+
+        // Re-initialise all render functions now that DOM nodes exist
+        renderAll();
+      } catch (err) {
+        console.error('Dashboard load error:', err);
+        container.innerHTML =
+          '<div class="placeholder-card"><strong>Failed to load dashboard</strong>' +
+          'Could not fetch gold-loan-dashboard.html. ' +
+          'Ensure you are serving files over HTTP (not file://).</div>';
+      }
     }
 
-    // Default load
+    /* ── Default load: Supra → Gold Loan ── */
     showGoldLoanDashboard();
   </script>
 </body>
