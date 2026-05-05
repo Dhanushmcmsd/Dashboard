@@ -4,7 +4,8 @@ import { prisma } from "@/lib/prisma";
 
 export async function GET(req: Request) {
   try {
-    const auth = await requireAuth(["ADMIN", "SUPER_ADMIN"]);
+    // SUPER_ADMIN removed — it does not exist in the Prisma Role enum
+    const auth = await requireAuth(["ADMIN"]);
     if (auth.error || !auth.user) {
       return errorResponse(auth.error || "Unauthorized", auth.status || 401);
     }

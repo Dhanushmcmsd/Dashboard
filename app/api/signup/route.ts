@@ -18,7 +18,9 @@ export async function POST(req: Request) {
     });
 
     if (existingUser) {
-      return errorResponse("User with this email already exists", 400);
+      // Silent 201 — do NOT reveal whether this email is already registered.
+      // Returning a distinct error leaks the company staff email list (user enumeration).
+      return NextResponse.json({ success: true, registered: true }, { status: 201 });
     }
 
     // Hash a random password since they will set it via link later

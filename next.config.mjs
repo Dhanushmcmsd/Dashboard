@@ -26,7 +26,9 @@ const nextConfig = {
             key: 'Content-Security-Policy',
             value: [
               "default-src 'self'",
-              "script-src 'self' 'unsafe-inline' https://js.pusher.com",
+              // Removed 'unsafe-inline' — it nullifies XSS protection.
+              // 'strict-dynamic' allows Next.js internal scripts while blocking injected scripts.
+              "script-src 'self' 'strict-dynamic' https://js.pusher.com",
               "connect-src 'self' https://*.pusher.com wss://*.pusher.com https://sockjs-mt1.pusher.com",
               "style-src 'self' 'unsafe-inline'",
               "img-src 'self' data: blob:",
