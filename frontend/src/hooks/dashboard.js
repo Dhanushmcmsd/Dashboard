@@ -1,0 +1,13 @@
+import { useQuery } from "@tanstack/react-query";
+import { api } from "../api/client";
+export const useDashboardKPIs = (companyId, portfolioType, period) => useQuery({ queryKey: ["kpis", companyId, portfolioType, period], queryFn: async () => (await api.get(`/dashboard/${companyId}/${portfolioType}/kpis`, { params: { period } })).data });
+export const useDisbursement = (companyId, portfolioType, period) => useQuery({ queryKey: ["disb", companyId, portfolioType, period], queryFn: async () => (await api.get(`/dashboard/${companyId}/${portfolioType}/disbursement-trend`, { params: { period } })).data });
+export const useBuckets = (companyId, portfolioType, period) => useQuery({ queryKey: ["buckets", companyId, portfolioType, period], queryFn: async () => (await api.get(`/dashboard/${companyId}/${portfolioType}/buckets`, { params: { period } })).data });
+export const useHighRisk = (companyId, portfolioType, period) => useQuery({ queryKey: ["risk", companyId, portfolioType, period], queryFn: async () => (await api.get(`/dashboard/${companyId}/${portfolioType}/high-risk`, { params: { period } })).data });
+export const useNPAData = (companyId, portfolioType, period) => useDashboardKPIs(companyId, portfolioType, period);
+export const useBranches = (companyId, portfolioType, period) => useQuery({ queryKey: ["branches", companyId, portfolioType, period], queryFn: async () => (await api.get(`/dashboard/${companyId}/${portfolioType}/branches`, { params: { period } })).data });
+export const useAlerts = (companyId, portfolioType, period) => useQuery({ queryKey: ["alerts", companyId, portfolioType, period], queryFn: async () => (await api.get(`/dashboard/${companyId}/${portfolioType}/alerts`, { params: { period } })).data });
+export const useUploadHistory = () => useQuery({ queryKey: ["uploads"], queryFn: async () => (await api.get("/uploads")).data });
+export const useUploadStatus = (uploadId) => useQuery({ queryKey: ["upload-status", uploadId], queryFn: async () => (await api.get(`/uploads/${uploadId}/status`)).data, enabled: !!uploadId, refetchInterval: 3000 });
+export const useNewCustomers = (companyId, portfolioType, period) => useDashboardKPIs(companyId, portfolioType, period);
+export const useClosedLoans = (companyId, portfolioType, period) => useDashboardKPIs(companyId, portfolioType, period);

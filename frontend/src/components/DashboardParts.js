@@ -1,0 +1,18 @@
+import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
+import { BarChart, Bar, PieChart, Pie, LineChart, Line, XAxis, YAxis, ResponsiveContainer, Cell } from "recharts";
+import { useAlerts, useBranches, useBuckets, useClosedLoans, useDashboardKPIs, useDisbursement, useHighRisk, useNewCustomers, useNPAData, useUploadHistory } from "../hooks/dashboard";
+export function KPIGrid({ companyId, portfolioType, period }) {
+    const { data } = useDashboardKPIs(companyId, portfolioType, period);
+    const entries = Object.entries(data || {}).slice(0, 13);
+    return _jsx("div", { className: "grid grid-cols-2 md:grid-cols-4 gap-3", children: entries.map(([k, v]) => _jsxs("div", { className: "border p-3 rounded", children: [_jsx("div", { className: "text-xs", children: k }), _jsx("div", { className: "font-bold", children: String(v) })] }, k)) });
+}
+export function DisbursementCollectionSection({ companyId, portfolioType, period }) { useDisbursement(companyId, portfolioType, period); const d = [{ n: "A", d: 10, c: 9 }]; return _jsx(ResponsiveContainer, { width: "100%", height: 200, children: _jsxs(BarChart, { data: d, children: [_jsx(XAxis, { dataKey: "n" }), _jsx(YAxis, {}), _jsx(Bar, { dataKey: "d", fill: "#0ea5e9" }), _jsx(Bar, { dataKey: "c", fill: "#22c55e" })] }) }); }
+export function BucketOverdueTable({ companyId, portfolioType, period }) { useBuckets(companyId, portfolioType, period); return _jsx("div", { className: "border p-3 rounded", children: "Buckets loaded" }); }
+export function NewCustomersSection({ companyId, portfolioType, period }) { useNewCustomers(companyId, portfolioType, period); return _jsx("div", { className: "border p-3 rounded", children: "New customers" }); }
+export function ClosedLoansSection({ companyId, portfolioType, period }) { useClosedLoans(companyId, portfolioType, period); return _jsx("div", { className: "border p-3 rounded", children: "Closed loans" }); }
+export function HighRiskTable({ companyId, portfolioType, period }) { useHighRisk(companyId, portfolioType, period); return _jsx("div", { className: "border p-3 rounded", children: "High risk" }); }
+export function NPARiskSection({ companyId, portfolioType, period }) { const { data } = useNPAData(companyId, portfolioType, period); const d = [{ name: "NPA", value: data?.gnpa_amount || 0 }, { name: "Other", value: Math.max((data?.total_aum || 0) - (data?.gnpa_amount || 0), 0) }]; return _jsx(ResponsiveContainer, { width: "100%", height: 220, children: _jsx(PieChart, { children: _jsxs(Pie, { data: d, dataKey: "value", nameKey: "name", outerRadius: 70, children: [_jsx(Cell, { fill: "#ef4444" }), _jsx(Cell, { fill: "#94a3b8" })] }) }) }); }
+export function BranchPerformanceTable({ companyId, portfolioType, period }) { useBranches(companyId, portfolioType, period); return _jsx("div", { className: "border p-3 rounded", children: "Branch performance" }); }
+export function AlertsPanel({ companyId, portfolioType, period }) { const { data } = useAlerts(companyId, portfolioType, period); return _jsxs("div", { className: "border p-3 rounded", children: ["Alerts: ", Array.isArray(data) ? data.length : 0] }); }
+export function UploadPanel() { const { data } = useUploadHistory(); const d = Array.isArray(data) ? data : []; return _jsxs("div", { className: "border p-3 rounded", children: ["Uploads: ", d.length] }); }
+export function TrendLine() { const d = [{ x: "D1", y: 5 }, { x: "D2", y: 7 }]; return _jsx(ResponsiveContainer, { width: "100%", height: 200, children: _jsxs(LineChart, { data: d, children: [_jsx(XAxis, { dataKey: "x" }), _jsx(YAxis, {}), _jsx(Line, { type: "monotone", dataKey: "y", stroke: "#f59e0b" })] }) }); }
